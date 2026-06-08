@@ -1,0 +1,307 @@
+# SaaS Reconstruction Engineering Constitution
+
+This document is the governing contract for all contributors (human and AI). It defines how we build for maximum profitability, reliability, and speed.
+
+## 1) Roles and Ownership
+
+Every work item must identify a responsible owner for each role:
+
+*  **Lead Architect**: system structure, domain boundaries, tenancy model
+*  **Backend Engineer**: API, DB, queue/worker logic, data guarantees
+*  **Frontend Engineer**: UX flows, accessibility, UI consistency
+*  **DevOps Engineer**: CI/CD, runtime reliability, observability, rollback
+*  **QA Engineer**: test strategy, edge-case coverage, quality gates
+*  **Product Manager**: market fit, profitability alignment, acceptance criteria
+*  **Security Officer**: RBAC, audit, secrets, abuse prevention, compliance
+
+No role is optional on production-impacting work.
+
+## 2) Rules of Execution
+
+1. Architect first; do not code before boundaries and flow are defined.
+2. Follow **Propose -> Review -> Implement** for every major change.
+3. Ship in complete, runnable units (no pseudo-code, no dangling imports).
+4. Keep changes reversible with explicit rollback criteria.
+5. Do not merge without passing all quality gates.
+
+## 3) Required Deliverables
+
+Every feature or rebuild segment must produce:
+
+* Proper "User" help document
+* Passing scores from Google Play Store, Apple's App Store, Microsoft Store and Amazon mobile application review process
+* Problem statement and profitability hypothesis
+* Scope + architecture note
+* Data model and API contract updates (if affected)
+* Working implementation with test reports
+* Any borderline areas in the application that requires a decision or upgrade to be made
+* Screenshots for UI changes
+* Operational notes (monitoring, rollback, runbook)
+* Post-launch KPI measurement plan
+
+## 4) Quality Gates
+
+A contribution is blocked until all are satisfied:
+* Play Store, App Store, Microsoft Store, and Amazon store tests all pass with no warnings
+* Build passes
+* Lint/type checks pass
+* Automated tests pass (or explicit waiver approved)
+* Security checks pass (secrets, authz, abuse vectors)
+* Accessibility checks meet WCAG AA baseline
+* Rollback plan documented
+* KPI hypothesis and guardrails documented
+
+## 5) Profitability Constraints
+
+All work must demonstrate at least one:
+
+* Revenue growth potential
+* Conversion lift potential
+* Retention/churn reduction potential
+* Cost reduction potential
+* Risk reduction protecting margin
+
+Hard constraints:
+
+* Minimize compute and infrastructure sprawl
+* Avoid unnecessary managed services
+* Prefer scalable, efficient serverless/container execution
+* Reduce support burden via clear UX and diagnostics
+
+## 6) Non-Negotiables
+
+* Multi-tenant isolation is mandatory
+* Core workflow end to end tested on Desktop and Mobile
+* Onboarding completes in under 2 minutes with a guided tour for the subscriber
+* Error handling and 404/500 pages properly implemented
+* Performance optimization: Page load under 3 seconds, API responses under 200ms
+* Accessibility basics: keyboard navigation, screen reader support, contrast ratios
+* No plaintext secrets anywhere
+* RBAC and audit trails for sensitive operations
+* Tenant-aware billing, data, and usage boundaries
+* Error boundaries, loading states, and empty states in user UI
+* Documentation for every major module
+* All bugs tracked in bug tracking log
+
+## 7) Handoff Protocol
+
+Each handoff (Agent/Human -> Agent/Human) must include:
+
+1. Context summary (what changed and why)
+2. Current status (done, in progress, blocked)
+3. Open risks and assumptions
+4. Exact next actions with owners
+5. Evidence links (tests, screenshots, logs, PR)
+
+No handoff without explicit next action.
+
+## 8) Review and Correction Loop
+
+Review loop:
+
+1. Primary reviewer validates architecture and correctness
+2. QA reviewer validates tests and edge cases
+3. Security reviewer validates auth, secrets, abuse controls
+4. Product reviewer validates business impact
+
+Correction loop:
+
+* Defect logged with severity and owner
+* Fix applied in smallest safe unit
+* Regression tests added
+* Root cause and prevention note recorded
+
+## 9) Market Viability Requirements
+
+Before merge, each feature must state:
+
+* Target user segment
+* User pain solved
+* Revenue or conversion mechanism
+* Expected support cost impact
+* Differentiation against alternatives
+
+If viability is weak, redesign before implementation.
+
+## 10) SaaS Architecture Standards
+
+* Tenant context required on every request path
+* Tenant-aware query enforcement at data access layer
+* Row-level or schema-level isolation strategy documented
+* Auto-scaling configured for traffic spikes
+* Stress tested at 10X expected traffic
+* DDoS protection enabled
+* CDN enabled
+* Database backups automated with tested restore process
+* CI/CD pipeline running for zero-downtime deploys
+* Monitoring and alerting setup
+* Idempotent background jobs and retry-safe worker design
+* API contracts versioned for external integrations
+* Observability: structured logs, metrics, traceable request IDs
+* Feature flags configured for gradual rollouts
+* Production deployment on reliable platform
+
+## 11) UI/UX Standards
+
+* Encouragement to upgrade subscription periodically but not overloaded
+* The user should never experience a blank or empty screen
+* The user should never have to guess what to do next
+* WCAG AA minimum/Prefer Premium options for ALL user journeys
+* Role-aware navigation and authorization-aware page states
+* Consistent design tokens and component usage
+* Explicit loading, empty, success, and error states
+* Form validation and actionable inline errors
+* Screenshot parity required for visual rebuild phases
+
+## 12) Security and Compliance Standards
+
+* Encrypt sensitive data at rest and in transit
+* Secure secret storage (no repo hardcoding)
+* RBAC for all privileged actions
+* Immutable audit logs for sensitive changes
+* Rate limiting and abuse prevention at edge/API
+* Incident-ready logging with tenant attribution
+* Terms of Service document with link in footer of public facing website page footers
+* Privacy policy document with link in footer of public facing website page footers
+* Cookie Consent Banner for public facing website pages
+* All necessary Data Policy documents produced and provided to the owners
+* Data export API
+* Data deletion API
+* DPIA for high risk processing
+* GDPR compliance: cookie consent banner, data export API, data deletion API, DPIA for high-risk processing
+* SOC 2 controls documented if targeting enterprise (use Vanta or Drata for automated compliance)
+* Acceptable Use Policy in place
+* DPA (Data Processing Agreement) ready for enterprise prospects
+
+## 14) Multi-Tenant SaaS Constraints
+
+* Never execute cross-tenant reads/writes without explicit admin pathway
+* Tenant ID propagation required across API, jobs, logs, and billing
+* Tenant usage limits and throttles must be enforceable
+* Cross-tenant analytics must use aggregate-safe paths only
+
+## 15) Documentation Requirements
+
+AI agents can optimize each phase of the SaaS development process by generating, updating, and maintaining the appropriate documentation. Structuring documentation in alignment with the build lifecycle ensures clarity, regulatory compliance, operational efficiency, and smoother onboarding.
+
+1. Discovery & Ideation Stage
+
+* Objective: Define the product vision, user problems, and AI value proposition.
+
+Documents:
+
+* Product Vision Statement: Clarifies the problem, target audience, and expected outcomes.
+* Use Case Docs / Feature Map: Identify critical workflows, essential AI capabilities, and business logic.
+* Market Research Report: Customer interviews, competitor analysis, pain-point validation. AI agents can summarize trends from surveys, forums, and social media.
+* Feasibility & Data Audit: Inventory of existing datasets, data quality metrics, and preliminary regulatory or ethical constraints.
+* Tech Stack & Architecture Outline: Initial high-level recommendation for AI models, backend/frontend frameworks, and infrastructure.
+
+1. Requirements & Planning Stage
+
+* Objective: Formulate detailed specifications for development and AI integration.
+
+Documents:
+
+* Product Requirements Document (PRD): Functional and non-functional requirements, workflows, user stories, AI task mapping.
+* Success Metrics & KPIs: Measurable outcomes like adoption rate, AI accuracy targets, and task automation efficiency.
+* AI Integration Plan: Specifies API use, custom ML models, RAG pipelines, embeddings, or fine-tuning requirements.
+* Data Governance & Compliance Plan: Data retention policies, consent, privacy, GDPR/HIPAA considerations, and ethical guidelines.
+
+1. Architecture & Design Stage
+
+* Objective: Define the system architecture and modular interactions.
+
+Documents:
+
+* Software Architecture Document (SAD): Component diagrams, module interactions, microservices layout, cloud infrastructure plan, and agent orchestration.
+* Database Schema & Data Flow Diagrams: Tables, vector embeddings, and AI data pipelines.
+* API Design & Interface Specs: Endpoints, input/output formats, authentication/authorization protocols, webhook specifications.
+* Agent Workflow Documentation: Task sequencing, decision paths, memory use, and performance considerations.
+
+1. MVP Development Stage
+
+* Objective: Build the Minimum Viable Product integrating core AI features.
+
+Documents:
+
+* Code Documentation: Inline comments, function explanations, modular coding standards; AI agents can auto-generate or augment these.
+* Version-Control & Commit Logs: Summary of code changes, AI model versions, and adjusted prompts.
+* Functional Test Cases & Unit Tests: Defined for both software functionality and AI model behavior.
+* AI Model Spec Sheets: Input/output expectations, datasets used, and versioning for reproducibility.
+
+1. Testing & Quality Assurance Stage
+
+* Objective: Validate software and AI performance under expected conditions.
+
+Documents:
+
+* Test Plans & Strategies: Test coverage for functional, integration, performance, AI inference accuracy, and edge-case scenarios.
+* Test Case Documentation: Document all scenarios, expected outcomes, and AI evaluation metrics (e.g., F1 score, latency).
+* Bug Reports & Issue Trackers: Auto-generated findings with severity, reproducing steps, and proposed fixes.
+* Performance Logs & Analytics Reports: Benchmarks for both SaaS operations and AI inference throughput.
+
+1. Deployment & Launch Stage
+
+* Objective: Release product to users with monitored and scalable infrastructure. Documents:
+* CI/CD Pipeline Documentation: Build, test, deployment steps, and rollback procedures. AI agents can maintain automated changelogs. User Manuals / Onboarding Guides: Stepwise instructions tailored for non-technical users and internal operators.
+* API Documentation & Tutorials: Interactive references with sample requests/responses, usage guides for developers. Release Notes & Changelogs: Details new features, bug fixes, updated AI functionalities, and known limitations.
+
+1. Operations, Monitoring & Iteration Stage
+
+* Objective: Scale, optimize, and continuously improve SaaS and AI performance.
+
+Documents:
+
+* Monitoring Dashboards & Logs: System health reports, AI usage statistics, error rates, latency.
+* Feedback & Feature Request Logs: Tracking user interactions, satisfaction metrics, and AI output refinements.
+* MLOps Documentation: Model retraining schedules, versioning, experiments, and audit trails for consent and compliance.
+* Troubleshooting Guides: Problem resolution for both system and AI-generated outputs, capturing learned solutions from user reports.
+* Performance Reports & ROI Evaluation: Business metrics vs technical outcomes, guiding next development cycles.
+
+Summary Mapping Table
+
+* Stage
+* Key Documents
+* AI Agent Roles
+* Discovery & Ideation Product vision, use cases, market research, feasibility reports Summarize research, outline features, suggest AI integration
+* Requirements & Planning PRD, KPIs, AI Integration Plan, Data Governance Plan Draft specs, evaluate data and model needs, compliance checks
+* Architecture & Design SAD, API specs, DB schema, Agent workflows Generate diagrams, suggest modular workflows
+* MVP Development Code docs, commit logs, test specs, AI model sheets Auto-comment code, maintain model documentation
+* Testing & QA Test plans, test cases, bug reports, performance logs Generate test scenarios, analyze AI inference quality
+* Deployment & Launch CI/CD docs, user manuals, API docs, release notes Auto-update changelogs, generate guided user instructions
+* Operations & Iteration Monitoring dashboards, MLOps docs, troubleshooting guides Continuous logging, retraining notes, adaptive troubleshooting documentation
+* Conclusion By aligning document creation with each stage of the SaaS build process, AI agents can both accelerate delivery and ensure completeness, from ideation to ongoing operations. This structured approach ensures technical clarity, seamless collaboration, and an optimized user experience, reducing risks and improving scalability for AI-powered SaaS products.
+
+## 16) Release Readiness Criteria
+
+A release is ready only if:
+
+* Critical workflows tested in staging
+* Migration/rollback validated
+* Monitoring dashboards and alerts updated
+* Runbook updated with known risks
+* KPI measurement window and owner assigned
+* Feature flags configured for gradual rollouts
+* CI/CD pipeline running for zero-downtime deploys
+* Database backups automated with tested restore process
+* CDN enabled
+* Auto-scaling configured for traffic spikes
+* Payment processor integration via Stripe
+* Subscription lifecycle implemented: trials, upgrades, downgrades, cancellations
+* Webhooks configured for payment activities
+* Invoicing and receipts automated
+* Refund policy defined (14-day no questions)
+* Pricing page live with 3 subscription tiers displayed (starter, pro, enterprise)
+* Accessibility Basics Implemented: keyboard navigation, screen reader support, proper contrast ratios
+* Performance optimized: page load under 3 seconds, API responses under 200ms
+* Error handling and 404/500 pages in place
+* Onboarding flow completes in under 2 minutes with a guided tour
+* Core workflow tested end to end on desktop and mobile
+
+## 17) Mandatory Startup Sequence for Reconstruction
+
+1. Collect Base44/OpenAPI/workflow inputs and screenshots
+2. Publish architecture plan and multi-tenant boundaries
+3. Publish repo scaffold and schema plan
+4. Publish feature-by-feature rebuild plan
+5. # Implement only after architecture approval
