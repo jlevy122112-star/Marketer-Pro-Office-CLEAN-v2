@@ -1,350 +1,418 @@
-/**
- * OnboardingPage.tsx — Premium rewrite (was a stub)
- * Marketer Pro Office Edition
- *
- * 4-step guided onboarding completing in under 2 minutes:
- *   Step 1: Welcome + workspace name
- *   Step 2: Brand identity (logo + colors)
- *   Step 3: Connect social accounts
- *   Step 4: Complete + go to desk
- *
- * Design: cinematic dark, classified gold, Syne/DM Sans fonts,
- * animated progress, staggered reveals, no blank states ever.
- */
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ArrowRight, Upload, Check, Zap,
-  Instagram, Linkedin, Globe, TrendingUp,
-  Palette, Users, ChevronRight,
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, ArrowRight, Check, Loader2, Wand2, BarChart3, CalendarDays } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBrand } from '../contexts/BrandContext';
 
-// ─── Steps config ─────────────────────────────────────────────────────────────
-const STEPS = [
-  { id: 1, label: 'Welcome', icon: '👋' },
-  { id: 2, label: 'Brand',   icon: '🎨' },
-  { id: 3, label: 'Connect', icon: '🔗' },
-  { id: 4, label: 'Ready',   icon: '🚀' },
+// ─── Step definitions ─────────────────────────────────────────────────────────
+const STEPS = ['welcome', 'brand', 'tone', 'platforms', 'ready'] as const;
+type Step = typeof STEPS[number];
+
+const TONE_OPTIONS = [
+  { id: 'professional',  label: 'Professional',  emoji: '💼', desc: 'Polished, authoritative, business-focused' },
+  { id: 'casual',        label: 'Casual',         emoji: '👋', desc: 'Friendly, approachable, conversational' },
+  { id: 'inspirational', label: 'Inspirational',  emoji: '✨', desc: 'Motivating, uplifting, vision-driven' },
+  { id: 'humorous',      label: 'Humorous',       emoji: '😄', desc: 'Witty, playful, entertains your audience' },
+  { id: 'authoritative', label: 'Authoritative',  emoji: '🎯', desc: 'Expert, commanding, thought leadership' },
+  { id: 'playful',       label: 'Playful',        emoji: '🎨', desc: 'Creative, bold, makes people smile' },
+] as const;
+
+const PLATFORM_OPTIONS = [
+  { id: 'instagram', label: 'Instagram', color: '#e1306c' },
+  { id: 'facebook',  label: 'Facebook',  color: '#1877f2' },
+  { id: 'tiktok',    label: 'TikTok',    color: '#010101' },
+  { id: 'linkedin',  label: 'LinkedIn',  color: '#0a66c2' },
+  { id: 'x',         label: 'X / Twitter', color: '#000000' },
+] as const;
+
+const INDUSTRY_OPTIONS = [
+  'E-commerce', 'SaaS / Tech', 'Food & Beverage', 'Fashion & Beauty',
+  'Health & Fitness', 'Real Estate', 'Finance', 'Education',
+  'Entertainment', 'Travel', 'Non-profit', 'Other',
 ];
 
-const BRAND_COLORS = [
-  '#C9A84C', '#6366f1', '#10b981', '#ef4444',
-  '#f59e0b', '#ec4899', '#3b82f6', '#8b5cf6',
-];
-
-const SOCIAL_PLATFORMS = [
-  { id: 'instagram', name: 'Instagram', icon: '📸', color: '#e1306c', hint: '1.4B users' },
-  { id: 'linkedin',  name: 'LinkedIn',  icon: '💼', color: '#0077b5', hint: 'B2B powerhouse' },
-  { id: 'tiktok',    name: 'TikTok',    icon: '🎵', color: '#ff0050', hint: 'Fastest growth' },
-  { id: 'facebook',  name: 'Facebook',  icon: '📘', color: '#1877f2', hint: '3B users' },
-  { id: 'twitter',   name: 'X (Twitter)', icon: '𝕏', color: '#e2e8f0', hint: 'Trending topics' },
-  { id: 'youtube',   name: 'YouTube',   icon: '▶️', color: '#ff0000', hint: 'Video first' },
-];
-
-// ─── Progress bar ─────────────────────────────────────────────────────────────
-const OnboardProgress = ({ step }: { step: number }) => (
-  <div className="flex items-center gap-2 mb-10">
-    {STEPS.map((s, i) => (
-      <React.Fragment key={s.id}>
-        <motion.div
-          animate={{
-            background: s.id < step ? 'linear-gradient(135deg,#C9A84C,#9d7c2e)'
-              : s.id === step ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)',
-            borderColor: s.id <= step ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)',
-          }}
-          className="w-8 h-8 rounded-full flex items-center justify-center border text-sm flex-shrink-0 transition-all"
-        >
-          {s.id < step
-            ? <Check className="w-3.5 h-3.5 text-void-900" />
-            : <span className={`text-xs font-bold font-display ${s.id === step ? 'text-classified' : 'text-slate-600'}`}>{s.id}</span>
-          }
-        </motion.div>
-        {i < STEPS.length - 1 && (
-          <div className="flex-1 h-px relative overflow-hidden bg-white/[0.06]">
-            <motion.div
-              animate={{ scaleX: step > s.id ? 1 : 0 }}
-              initial={{ scaleX: 0 }}
-              style={{ originX: 0 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0"
-              style={{ background: 'linear-gradient(90deg,#C9A84C,rgba(201,168,76,0.3))' }}
-            />
-          </div>
-        )}
-      </React.Fragment>
-    ))}
-  </div>
+// ─── Shared step wrapper ──────────────────────────────────────────────────────
+const StepWrapper = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, x: 40 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: -40 }}
+    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    className="flex flex-col gap-6"
+  >
+    {children}
+  </motion.div>
 );
 
-// ─── Step 1: Welcome ──────────────────────────────────────────────────────────
-const Step1 = ({ onNext, userName }: { onNext: (name: string) => void; userName: string }) => {
-  const [workspace, setWorkspace] = useState(userName ? `${userName}'s Brand` : '');
+// ─── Step: Welcome ────────────────────────────────────────────────────────────
+const WelcomeStep = ({ onNext }: { onNext: () => void }) => (
+  <StepWrapper>
+    <div className="flex flex-col items-center gap-4 py-6">
+      <motion.div
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative"
+      >
+        <div className="w-20 h-20 rounded-3xl bg-classified/10 border border-classified/20 flex items-center justify-center">
+          <Shield className="w-10 h-10 text-classified" />
+        </div>
+        <motion.div
+          className="absolute inset-0 rounded-3xl border border-classified/30"
+          animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0, 0.6] }}
+          transition={{ duration: 2.5, repeat: Infinity }}
+        />
+      </motion.div>
 
-  return (
-    <motion.div key="step1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} className="text-center">
-      <div className="text-5xl mb-6">👋</div>
-      <h1 className="font-display text-2xl font-extrabold text-slate-100 tracking-tight mb-3">
-        Welcome to<br/>
-        <span style={{ background: 'linear-gradient(135deg,#C9A84C,#E8C96A)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Marketer Pro
-        </span>
-      </h1>
-      <p className="text-sm text-slate-400 leading-relaxed mb-8 max-w-xs mx-auto">
-        Let's set up your workspace in under 2 minutes. We'll personalize everything to your brand.
+      <div className="text-center space-y-2">
+        <h1 className="font-display text-4xl tracking-[0.15em] text-classified">MARKETER PRO</h1>
+        <p className="text-xs text-slate-500 tracking-[0.3em] uppercase font-classified">Office Edition</p>
+      </div>
+
+      <p className="text-center text-sm text-slate-400 font-body max-w-xs leading-relaxed">
+        Your AI-powered marketing command center. Let's set up your workspace in under 2 minutes.
       </p>
+    </div>
 
-      <div className="text-left mb-6">
-        <label className="block text-xs font-medium text-slate-400 mb-2 tracking-wide">Your workspace name</label>
+    <div className="grid grid-cols-3 gap-3">
+      {[
+        { icon: Wand2,        label: 'AI Content',  desc: 'Generate posts in seconds' },
+        { icon: CalendarDays, label: 'Scheduler',   desc: 'Plan and auto-publish' },
+        { icon: BarChart3,    label: 'Analytics',   desc: 'Track your performance' },
+      ].map(({ icon: Icon, label, desc }) => (
+        <div key={label} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
+          <Icon className="w-5 h-5 text-classified" />
+          <p className="text-xs font-heading font-semibold text-slate-300">{label}</p>
+          <p className="text-2xs text-slate-600">{desc}</p>
+        </div>
+      ))}
+    </div>
+
+    <button
+      onClick={onNext}
+      className="w-full h-13 rounded-xl flex items-center justify-center gap-2 font-heading font-semibold text-sm text-void-900 tracking-wider uppercase transition-all active:scale-[0.98]"
+      style={{ background: 'linear-gradient(135deg, #c9a84c 0%, #9d7c2e 100%)', height: 52 }}
+    >
+      Get Started
+      <ArrowRight className="w-4 h-4" />
+    </button>
+  </StepWrapper>
+);
+
+// ─── Step: Brand ──────────────────────────────────────────────────────────────
+const BrandStep = ({
+  onNext,
+  brandName, setBrandName,
+  industry, setIndustry,
+  website, setWebsite,
+}: {
+  onNext: () => void;
+  brandName: string; setBrandName: (v: string) => void;
+  industry: string; setIndustry: (v: string) => void;
+  website: string; setWebsite: (v: string) => void;
+}) => (
+  <StepWrapper>
+    <div>
+      <h2 className="font-display text-2xl tracking-wider text-classified">YOUR BRAND</h2>
+      <p className="text-sm text-slate-500 mt-1">Tell us about the brand you're marketing.</p>
+    </div>
+
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="text-2xs font-heading tracking-widest text-slate-500 uppercase">Brand name *</label>
         <input
-          type="text" value={workspace} onChange={e => setWorkspace(e.target.value)}
-          placeholder="e.g. Acme Brand Studio"
-          className="w-full h-12 px-4 rounded-xl text-sm text-slate-200 placeholder-slate-600 outline-none transition-all"
-          style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', fontFamily: "'DM Sans',sans-serif" }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.35)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(201,168,76,0.06)'; }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; }}
+          value={brandName}
+          onChange={e => setBrandName(e.target.value)}
+          placeholder="e.g. Acme Corp"
+          className="w-full h-12 px-4 rounded-xl bg-desk-800 border border-white/[0.08] text-slate-200 placeholder-slate-600 text-sm focus:outline-none focus:border-classified/40 transition-colors"
           autoFocus
         />
       </div>
 
-      <button
-        onClick={() => onNext(workspace)}
-        disabled={!workspace.trim()}
-        className="w-full h-12 rounded-xl font-display font-bold text-sm tracking-[0.1em] uppercase flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ background: 'linear-gradient(135deg,#C9A84C,#9d7c2e)', color: '#080B14', boxShadow: '0 4px 20px rgba(201,168,76,0.25)' }}
-      >
-        Get Started <ArrowRight className="w-4 h-4"/>
-      </button>
-    </motion.div>
-  );
-};
-
-// ─── Step 2: Brand setup ──────────────────────────────────────────────────────
-const Step2 = ({ onNext, onSkip }: { onNext: (color: string) => void; onSkip: () => void }) => {
-  const [selectedColor, setSelectedColor] = useState(BRAND_COLORS[0]);
-  const [logoUploaded, setLogoUploaded] = useState(false);
-
-  return (
-    <motion.div key="step2" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}>
-      <div className="flex items-center justify-center w-14 h-14 rounded-2xl mb-6 mx-auto"
-        style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)' }}>
-        <Palette className="w-6 h-6 text-classified" />
-      </div>
-      <h2 className="font-display text-xl font-extrabold text-slate-100 tracking-tight text-center mb-2">Set up your brand</h2>
-      <p className="text-sm text-slate-400 text-center mb-8 max-w-xs mx-auto">Every piece of content will be injected with your brand identity automatically.</p>
-
-      {/* Logo upload */}
-      <div
-        onClick={() => setLogoUploaded(true)}
-        className="border-2 border-dashed rounded-2xl p-6 mb-6 cursor-pointer flex flex-col items-center gap-2 transition-all"
-        style={{
-          borderColor: logoUploaded ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)',
-          background: logoUploaded ? 'rgba(201,168,76,0.05)' : 'rgba(17,24,39,0.6)',
-        }}
-        onMouseEnter={e => { if (!logoUploaded) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(201,168,76,0.25)'; }}
-        onMouseLeave={e => { if (!logoUploaded) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
-      >
-        {logoUploaded
-          ? <><div className="w-12 h-12 rounded-xl bg-classified flex items-center justify-center font-display font-bold text-void-900 text-xl">M</div><p className="text-xs text-classified font-medium">Logo uploaded ✓</p></>
-          : <><Upload className="w-6 h-6 text-slate-500"/><p className="text-sm text-slate-400">Drop your logo here</p><p className="text-xs text-slate-600">PNG, SVG or JPG · Max 5MB</p></>
-        }
-      </div>
-
-      {/* Color picker */}
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-[0.12em] mb-3">Primary Brand Color</p>
-      <div className="flex gap-2.5 mb-8 flex-wrap">
-        {BRAND_COLORS.map(color => (
-          <button
-            key={color}
-            onClick={() => setSelectedColor(color)}
-            className="w-10 h-10 rounded-xl transition-all"
-            style={{
-              background: color,
-              border: `2px solid ${selectedColor === color ? 'white' : 'transparent'}`,
-              transform: selectedColor === color ? 'scale(1.15)' : 'scale(1)',
-              boxShadow: selectedColor === color ? `0 0 12px ${color}60` : 'none',
-            }}
-            aria-label={`Select color ${color}`}
-            aria-pressed={selectedColor === color}
-          />
-        ))}
-      </div>
-
-      <button
-        onClick={() => onNext(selectedColor)}
-        className="w-full h-12 rounded-xl font-display font-bold text-sm tracking-[0.1em] uppercase flex items-center justify-center gap-2 transition-all mb-3"
-        style={{ background: 'linear-gradient(135deg,#C9A84C,#9d7c2e)', color: '#080B14', boxShadow: '0 4px 20px rgba(201,168,76,0.25)' }}
-      >
-        Save Brand & Continue <ArrowRight className="w-4 h-4"/>
-      </button>
-      <button onClick={onSkip} className="w-full text-center text-xs text-slate-600 hover:text-slate-400 transition-colors py-1">
-        Set up later
-      </button>
-    </motion.div>
-  );
-};
-
-// ─── Step 3: Connect accounts ─────────────────────────────────────────────────
-const Step3 = ({ onNext, onSkip }: { onNext: (platforms: string[]) => void; onSkip: () => void }) => {
-  const [connected, setConnected] = useState<string[]>([]);
-
-  const toggle = (id: string) =>
-    setConnected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-
-  return (
-    <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}>
-      <div className="flex items-center justify-center w-14 h-14 rounded-2xl mb-6 mx-auto"
-        style={{ background: 'rgba(110,231,183,0.1)', border: '1px solid rgba(110,231,183,0.2)' }}>
-        <Globe className="w-6 h-6 text-reactor" />
-      </div>
-      <h2 className="font-display text-xl font-extrabold text-slate-100 tracking-tight text-center mb-2">Connect your accounts</h2>
-      <p className="text-sm text-slate-400 text-center mb-6 max-w-xs mx-auto">We'll optimize every post for each platform's best practices automatically.</p>
-
-      <div className="flex flex-col gap-2.5 mb-6">
-        {SOCIAL_PLATFORMS.map((p, i) => {
-          const isConnected = connected.includes(p.id);
-          return (
-            <motion.button
-              key={p.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.06 }}
-              onClick={() => toggle(p.id)}
-              className="flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left"
-              style={{
-                background: isConnected ? `${p.color}12` : 'rgba(17,24,39,0.6)',
-                borderColor: isConnected ? `${p.color}40` : 'rgba(255,255,255,0.06)',
-              }}
+      <div className="space-y-1.5">
+        <label className="text-2xs font-heading tracking-widest text-slate-500 uppercase">Industry</label>
+        <div className="grid grid-cols-3 gap-2">
+          {INDUSTRY_OPTIONS.map(opt => (
+            <button
+              key={opt}
+              onClick={() => setIndustry(opt)}
+              className={`px-2 py-2 rounded-lg text-xs font-body transition-all text-center ${
+                industry === opt
+                  ? 'bg-classified/15 border border-classified/30 text-classified'
+                  : 'bg-white/[0.03] border border-white/[0.06] text-slate-500 hover:border-white/[0.12]'
+              }`}
             >
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-                style={{ background: `${p.color}20`, border: `1px solid ${p.color}30` }}>
-                {p.icon}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-200">{p.name}</p>
-                <p className="text-xs text-slate-500">{p.hint}</p>
-              </div>
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all flex-shrink-0`}
-                style={{
-                  background: isConnected ? p.color : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${isConnected ? p.color : 'rgba(255,255,255,0.1)'}`,
-                }}>
-                {isConnected && <Check className="w-3 h-3 text-white" />}
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
-
-      <button
-        onClick={() => onNext(connected)}
-        disabled={connected.length === 0}
-        className="w-full h-12 rounded-xl font-display font-bold text-sm tracking-[0.1em] uppercase flex items-center justify-center gap-2 transition-all mb-3 disabled:opacity-50"
-        style={{ background: 'linear-gradient(135deg,#C9A84C,#9d7c2e)', color: '#080B14', boxShadow: '0 4px 20px rgba(201,168,76,0.25)' }}
-      >
-        {connected.length > 0 ? `Connect ${connected.length} Account${connected.length > 1 ? 's' : ''}` : 'Select Platforms'}
-        {connected.length > 0 && <ArrowRight className="w-4 h-4"/>}
-      </button>
-      <button onClick={onSkip} className="w-full text-center text-xs text-slate-600 hover:text-slate-400 transition-colors py-1">
-        Connect later
-      </button>
-    </motion.div>
-  );
-};
-
-// ─── Step 4: Complete ─────────────────────────────────────────────────────────
-const Step4 = ({ onComplete, workspaceName }: { onComplete: () => void; workspaceName: string }) => {
-  const items = ['Unlimited AI content generation', 'Platform-optimized posts', 'Brand injection on every post', 'Real-time performance analytics'];
-  return (
-    <motion.div key="step4" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="text-center">
-      {/* Animated check */}
-      <div className="relative w-20 h-20 mx-auto mb-8">
-        <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0, 0.2] }}
-          transition={{ duration: 2.5, repeat: Infinity }}
-          className="absolute inset-0 rounded-full"
-          style={{ border: '1px solid rgba(201,168,76,0.3)', margin: '-8px' }}
-        />
-        <motion.div
-          animate={{ scale: [1, 1.08, 1], opacity: [0.15, 0, 0.15] }}
-          transition={{ duration: 2.5, repeat: Infinity, delay: 0.4 }}
-          className="absolute inset-0 rounded-full"
-          style={{ border: '1px solid rgba(201,168,76,0.2)', margin: '-16px' }}
-        />
-        <div className="w-20 h-20 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,#C9A84C,#9d7c2e)', boxShadow: '0 0 40px rgba(201,168,76,0.4)' }}>
-          <Check className="w-8 h-8 text-void-900" />
+              {opt}
+            </button>
+          ))}
         </div>
       </div>
 
-      <h2 className="font-display text-2xl font-extrabold mb-2" style={{ background: 'linear-gradient(135deg,#C9A84C,#E8C96A)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-        {workspaceName} is ready!
-      </h2>
-      <p className="text-sm text-slate-400 mb-8 max-w-xs mx-auto">Your workspace is set up and personalized. Here's what's waiting for you:</p>
+      <div className="space-y-1.5">
+        <label className="text-2xs font-heading tracking-widest text-slate-500 uppercase">Website (optional)</label>
+        <input
+          value={website}
+          onChange={e => setWebsite(e.target.value)}
+          placeholder="https://yourbrand.com"
+          className="w-full h-12 px-4 rounded-xl bg-desk-800 border border-white/[0.08] text-slate-200 placeholder-slate-600 text-sm focus:outline-none focus:border-classified/40 transition-colors"
+        />
+      </div>
+    </div>
 
-      <div className="flex flex-col gap-2.5 mb-8">
-        {items.map((item, i) => (
-          <motion.div key={item} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.08 }}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-            style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.15)' }}>
-            <Zap className="w-4 h-4 text-classified flex-shrink-0" />
-            <span className="text-sm text-slate-300 font-medium">{item}</span>
-          </motion.div>
-        ))}
+    <button
+      onClick={onNext}
+      disabled={!brandName.trim()}
+      className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-sm text-void-900 tracking-wider uppercase disabled:opacity-40 transition-all active:scale-[0.98]"
+      style={{ background: 'linear-gradient(135deg, #c9a84c 0%, #9d7c2e 100%)', height: 52, borderRadius: 12 }}
+    >
+      Continue
+      <ArrowRight className="w-4 h-4" />
+    </button>
+  </StepWrapper>
+);
+
+// ─── Step: Tone ───────────────────────────────────────────────────────────────
+const ToneStep = ({
+  onNext, tone, setTone,
+}: { onNext: () => void; tone: string; setTone: (t: string) => void }) => (
+  <StepWrapper>
+    <div>
+      <h2 className="font-display text-2xl tracking-wider text-classified">BRAND VOICE</h2>
+      <p className="text-sm text-slate-500 mt-1">How does your brand communicate?</p>
+    </div>
+
+    <div className="grid grid-cols-2 gap-2">
+      {TONE_OPTIONS.map(opt => (
+        <button
+          key={opt.id}
+          onClick={() => setTone(opt.id)}
+          className={`flex flex-col gap-1 p-3 rounded-xl border transition-all text-left ${
+            tone === opt.id
+              ? 'bg-classified/10 border-classified/30 shadow-classified'
+              : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-lg">{opt.emoji}</span>
+            {tone === opt.id && <Check className="w-3.5 h-3.5 text-classified" />}
+          </div>
+          <p className={`text-sm font-heading font-semibold ${tone === opt.id ? 'text-classified' : 'text-slate-300'}`}>
+            {opt.label}
+          </p>
+          <p className="text-2xs text-slate-600 leading-relaxed">{opt.desc}</p>
+        </button>
+      ))}
+    </div>
+
+    <button
+      onClick={onNext}
+      disabled={!tone}
+      className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-sm text-void-900 tracking-wider uppercase disabled:opacity-40 transition-all active:scale-[0.98]"
+      style={{ background: 'linear-gradient(135deg, #c9a84c 0%, #9d7c2e 100%)', height: 52, borderRadius: 12 }}
+    >
+      Continue
+      <ArrowRight className="w-4 h-4" />
+    </button>
+  </StepWrapper>
+);
+
+// ─── Step: Platforms ──────────────────────────────────────────────────────────
+const PlatformsStep = ({
+  onNext, platforms, togglePlatform,
+}: { onNext: () => void; platforms: string[]; togglePlatform: (p: string) => void }) => (
+  <StepWrapper>
+    <div>
+      <h2 className="font-display text-2xl tracking-wider text-classified">PLATFORMS</h2>
+      <p className="text-sm text-slate-500 mt-1">Which platforms do you publish on?</p>
+    </div>
+
+    <div className="space-y-2">
+      {PLATFORM_OPTIONS.map(({ id, label, color }) => {
+        const selected = platforms.includes(id);
+        return (
+          <button
+            key={id}
+            onClick={() => togglePlatform(id)}
+            className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+              selected
+                ? 'border-classified/30 bg-classified/5'
+                : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]'
+            }`}
+          >
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${color}25`, border: `1px solid ${color}40` }}
+            >
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+            </div>
+            <span className={`flex-1 text-sm font-body text-left ${selected ? 'text-slate-200' : 'text-slate-400'}`}>
+              {label}
+            </span>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+              selected ? 'bg-classified border-classified' : 'border-white/20'
+            }`}>
+              {selected && <Check className="w-3 h-3 text-void-900" strokeWidth={3} />}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+
+    <button
+      onClick={onNext}
+      disabled={platforms.length === 0}
+      className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-sm text-void-900 tracking-wider uppercase disabled:opacity-40 transition-all active:scale-[0.98]"
+      style={{ background: 'linear-gradient(135deg, #c9a84c 0%, #9d7c2e 100%)', height: 52, borderRadius: 12 }}
+    >
+      Continue
+      <ArrowRight className="w-4 h-4" />
+    </button>
+  </StepWrapper>
+);
+
+// ─── Step: Ready ──────────────────────────────────────────────────────────────
+const ReadyStep = ({ onFinish, saving }: { onFinish: () => void; saving: boolean }) => (
+  <StepWrapper>
+    <div className="flex flex-col items-center gap-5 py-8 text-center">
+      <motion.div
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ delay: 0.1, duration: 0.6, type: 'spring', stiffness: 200 }}
+        className="w-20 h-20 rounded-full bg-classified/15 border border-classified/30 flex items-center justify-center"
+      >
+        <Check className="w-10 h-10 text-classified" strokeWidth={2.5} />
+      </motion.div>
+
+      <div className="space-y-2">
+        <h2 className="font-display text-3xl tracking-[0.15em] text-classified">ALL SET</h2>
+        <p className="text-sm text-slate-400 font-body max-w-xs">
+          Your workspace is configured. Your AI marketing assistant is ready to deploy.
+        </p>
       </div>
 
-      <motion.button
-        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-        onClick={onComplete}
-        className="w-full h-13 rounded-xl font-display font-bold text-sm tracking-[0.12em] uppercase flex items-center justify-center gap-2 transition-all"
-        style={{ height: '52px', background: 'linear-gradient(135deg,#C9A84C,#9d7c2e)', color: '#080B14', boxShadow: '0 8px 32px rgba(201,168,76,0.4)' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 12px 40px rgba(201,168,76,0.5)'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ''; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 32px rgba(201,168,76,0.4)'; }}
-      >
-        Open My Desk <ArrowRight className="w-4 h-4"/>
-      </motion.button>
-    </motion.div>
-  );
-};
+      <div className="w-full p-4 rounded-xl border border-classified/15 bg-classified/5 text-left space-y-2">
+        <p className="text-2xs font-heading tracking-widest text-classified uppercase">What's next</p>
+        {[
+          'Open the Artifact Vault to generate your first content',
+          'Schedule posts from the Calendar',
+          'Level up by completing daily missions',
+        ].map((item, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <div className="w-1 h-1 rounded-full bg-classified mt-2 flex-shrink-0" />
+            <p className="text-xs text-slate-400 font-body">{item}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <button
+      onClick={onFinish}
+      disabled={saving}
+      className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-sm text-void-900 tracking-wider uppercase transition-all active:scale-[0.98]"
+      style={{ background: 'linear-gradient(135deg, #c9a84c 0%, #9d7c2e 100%)', height: 52, borderRadius: 12 }}
+    >
+      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+      {saving ? 'Setting up...' : 'Enter the Office'}
+      {!saving && <ArrowRight className="w-4 h-4" />}
+    </button>
+  </StepWrapper>
+);
 
 // ─── Main OnboardingPage ──────────────────────────────────────────────────────
 export const OnboardingPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [step, setStep] = useState(1);
-  const [workspaceName, setWorkspaceName] = useState('');
+  const { refreshUser } = useAuth();
+  const { createBrand } = useBrand();
 
-  const userName = (user as any)?.user_metadata?.full_name?.split(' ')[0] ?? 'there';
+  const [currentStep, setCurrentStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [brandName, setBrandName] = useState('');
+  const [industry, setIndustry]   = useState('');
+  const [website, setWebsite]     = useState('');
+  const [tone, setTone]           = useState('professional');
+  const [platforms, setPlatforms] = useState<string[]>(['instagram']);
+
+  const togglePlatform = (p: string) =>
+    setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+
+  const handleFinish = async () => {
+    setSaving(true);
+    try {
+      // Create the first brand
+      await createBrand({
+        name: brandName.trim() || 'My Brand',
+        industry: industry || null,
+        website: website || null,
+        tone: tone as 'professional',
+        primaryColor: '#c9a84c',
+        secondaryColor: '#1a1a25',
+      });
+
+      // Mark onboarding complete + award XP
+      await fetch('/api/progression/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ eventType: 'completed_onboarding' }),
+      });
+
+      await refreshUser();
+      navigate('/', { replace: true });
+    } catch {
+      setSaving(false);
+    }
+  };
+
+  const STEP_COMPONENTS = [
+    <WelcomeStep onNext={() => setCurrentStep(1)} />,
+    <BrandStep
+      onNext={() => setCurrentStep(2)}
+      brandName={brandName} setBrandName={setBrandName}
+      industry={industry}   setIndustry={setIndustry}
+      website={website}     setWebsite={setWebsite}
+    />,
+    <ToneStep onNext={() => setCurrentStep(3)} tone={tone} setTone={setTone} />,
+    <PlatformsStep onNext={() => setCurrentStep(4)} platforms={platforms} togglePlatform={togglePlatform} />,
+    <ReadyStep onFinish={handleFinish} saving={saving} />,
+  ];
 
   return (
-    <div className="min-h-screen bg-void-900 flex items-center justify-center px-6 py-12 safe-top safe-bottom"
-      style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-      {/* Background glow */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-96 h-64 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse,rgba(201,168,76,0.06) 0%,transparent 70%)' }} />
+    <div className="flex flex-col h-screen bg-void-900 safe-top">
+      {/* Ambient glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 65%)' }}
+      />
 
-      <div className="w-full max-w-sm relative z-10">
-        <OnboardProgress step={step} />
+      {/* Progress dots */}
+      {currentStep > 0 && (
+        <div className="relative z-10 flex items-center justify-center gap-2 pt-6 pb-2">
+          {STEPS.slice(1).map((_, i) => (
+            <div
+              key={i}
+              className={`h-1 rounded-full transition-all duration-300 ${
+                i < currentStep - 1
+                  ? 'w-6 bg-classified'
+                  : i === currentStep - 1
+                  ? 'w-4 bg-classified'
+                  : 'w-4 bg-white/10'
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
+      {/* Step content */}
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 py-4">
         <AnimatePresence mode="wait">
-          {step === 1 && <Step1 onNext={name => { setWorkspaceName(name); setStep(2); }} userName={userName} />}
-          {step === 2 && <Step2 onNext={() => setStep(3)} onSkip={() => setStep(3)} />}
-          {step === 3 && <Step3 onNext={() => setStep(4)} onSkip={() => setStep(4)} />}
-          {step === 4 && <Step4 onComplete={() => navigate('/')} workspaceName={workspaceName || 'Your workspace'} />}
+          <div key={currentStep}>
+            {STEP_COMPONENTS[currentStep]}
+          </div>
         </AnimatePresence>
-
-        <p className="text-center text-xs text-slate-700 mt-8">
-          Step {step} of {STEPS.length} · Takes under 2 minutes
-        </p>
       </div>
     </div>
   );
 };
-
-export default OnboardingPage;
