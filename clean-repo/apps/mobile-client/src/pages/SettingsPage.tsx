@@ -1,3 +1,24 @@
+
+// The Plan, Analytics, and Settings pages have no pull-to-refresh.
+// On mobile, users expect swipe-down-to-refresh on any content list.
+
+function usePullToRefresh(onRefresh: () => Promise<void>) {
+  const [refreshing, setRefreshing] = useState(false);
+  const startY = useRef(0);
+
+  const handlers = {
+    onTouchStart: (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; },
+    onTouchMove: (e: React.TouchEvent) => {
+      const deltaY = e.touches[0].clientY - startY.current;
+      if (deltaY > 80 && !refreshing) {
+        setRefreshing(true);
+        onRefresh().finally(() => setRefreshing(false));
+      }
+    },
+  };
+
+  return { refreshing, handlers };
+}
 import { motion } from 'framer-motion';
 import { Settings } from 'lucide-react';
 
