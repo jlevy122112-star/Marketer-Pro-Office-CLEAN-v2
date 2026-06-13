@@ -1,40 +1,31 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { Brand } from '../types';
-import { useAuth } from './AuthContext';
+'use client';
 
-interface BrandContextValue {
-  brands: Brand[];
-  activeBrand: Brand | null;
-  isLoading: boolean;
-  setActiveBrand: (brand: Brand) => void;
-  refreshBrands: () => Promise<void>;
-  createBrand: (data: Partial<Brand>) => Promise<Brand>;
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import type { BrandTone } from '@marketer-pro/cinematic-engine';
+
+interface Brand {
+  id:   string;
+  name: string;
+  tone: BrandTone;
 }
 
-const BrandContext = createContext<BrandContextValue | null>(null);
+interface BrandCtx {
+  activeBrand:    Brand | null;
+  setActiveBrand: (brand: Brand | null) => void;
+}
 
-export const BrandProvider = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  const [brands, setBrands] = useState<Brand[]>([]);
+const Ctx = createContext<BrandCtx | null>(null);
+
+export function BrandProvider({ children }: { children: ReactNode }) {
   const [activeBrand, setActiveBrand] = useState<Brand | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  return <Ctx.Provider value={{ activeBrand, setActiveBrand }}>{children}</Ctx.Provider>;
+}
 
-  const fetchBrands = async () => {
-    if (!isAuthenticated) return;
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/brands', { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setBrands(data.brands);
-        // Set first brand as active if none selected
-        if (!activeBrand && data.brands.length > 0) {
-          setActiveBrand(data.brands[0]);
-        }
-      }
-    } finally {
-      setIsLoading(false);
-    }
+export function useBrandContext(): BrandCtx {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error('useBrandContext must be inside BrandProvider');
+  return ctx;
+}    }
   };
 
   useEffect(() => {
