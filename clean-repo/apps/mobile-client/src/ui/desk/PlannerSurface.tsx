@@ -361,3 +361,21 @@ const TaskCard = ({ task, index, onToggle }: TaskCardProps) => {
     </motion.div>
   );
 };
+(Snippet)
+import { usePlanner } from '../../hooks/usePlanner';
+
+export const PlannerSurface = ({ brandId }) => {
+  const { calendarDays, getPostsForDay } = usePlanner(brandId);
+
+  return (
+    <div className="planner-grid">
+      {calendarDays.map(day => (
+        <DayCell 
+          key={day.toISOString()} 
+          date={day} 
+          posts={getPostsForDay(day)} 
+        />
+      ))}
+    </div>
+  );
+};
