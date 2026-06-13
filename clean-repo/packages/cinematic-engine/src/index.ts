@@ -37,3 +37,24 @@ export type {
 } from './types';
 
 export { REACTOR_SWITCH_ORDER } from './types';
+// ── Add to existing index.ts ─────────────────────────────────────────────────
+
+export { haptic, hapticUnlockSequence } from './haptics';
+export type { HapticStyle } from './haptics';
+
+export {
+  PLATFORMS,
+  ACTIVE_PLATFORMS,
+  COMING_SOON_PLATFORMS,
+  getPlatformMeta,
+  CONTENT_TYPES,
+  BRAND_TONES,
+  PROMPT_STARTERS,
+  PLATFORM_CHAR_LIMITS,
+} from './constants';
+export type { PlatformMeta } from './constants';
+
+export { default as VaultDoorScene } from './scenes/VaultDoorScene';
+export { default as ReactorScene } from './scenes/ReactorScene';
+export { default as PresentationChamberScene } from './scenes/PresentationChamberScene';
+export { default as GeneratorForm } from './scenes/GeneratorForm';
