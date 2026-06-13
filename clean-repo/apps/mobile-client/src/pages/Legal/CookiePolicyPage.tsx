@@ -1,40 +1,41 @@
+'use client';
+
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Container, Stack, Heading, Text } from '@marketer-pro/ui';
+import { colors, space, letterSpacings } from '@marketer-pro/ui';
+import { SUPPORT } from '../../lib/constants';
 
-interface SectionProps { title: string; children: React.ReactNode; }
-const Section = ({ title, children }: SectionProps) => (
-  <div className="space-y-3">
-    <h2 className="font-heading text-sm font-semibold text-slate-200 tracking-wide">{title}</h2>
-    <div className="text-sm text-slate-400 font-body leading-relaxed space-y-2">{children}</div>
-  </div>
-);
-
-interface TableRow { tech: string; purpose: string; duration: string; }
-const PolicyTable = ({ rows }: { rows: TableRow[] }) => (
-  <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-    <div className="grid grid-cols-3 bg-white/[0.02] border-b border-white/[0.06]">
-      {['Technology', 'Purpose', 'Duration'].map(h => (
-        <div key={h} className="px-3 py-2 font-classified text-[9px] tracking-widest text-slate-600 uppercase">{h}</div>
-      ))}
-    </div>
-    {rows.map((row, i) => (
-      <div key={i} className="grid grid-cols-3 border-b border-white/[0.04] last:border-0">
-        <div className="px-3 py-2 font-mono text-[11px] text-classified/70">{row.tech}</div>
-        <div className="px-3 py-2 text-xs text-slate-500">{row.purpose}</div>
-        <div className="px-3 py-2 text-xs text-slate-600">{row.duration}</div>
-      </div>
-    ))}
-  </div>
-);
-
-export const CookiePolicyPage = () => {
+export default function CookiePolicyPage() {
   const navigate = useNavigate();
 
-  const necessaryRows: TableRow[] = [
-    { tech: 'session_token',     purpose: 'Authenticates your login session',                          duration: '30 days'    },
-    { tech: 'auth_refresh',      purpose: 'Silently refreshes your session',                           duration: '90 days'    },
-    { tech: 'brand_id',          purpose: 'Remembers last active brand workspace',                     duration: 'Persistent' },
-    { tech: 'onboarding_complete', purpose: 'Prevents onboarding from repeating',                     duration: 'Persistent' },
+  return (
+    <Container tabBarOffset={false}>
+      <div style={{ padding: `${space[4]} ${space[5]} ${space[3]}` }}>
+        <button onClick={() => navigate(-1)} aria-label="Go back"
+          style={{ color: colors.text.tertiary, background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginBottom: space[4] }}>
+          <ArrowLeft size={20} />
+        </button>
+        <Heading level={2} gold>Cookie Policy</Heading>
+        <Text variant="faint" size="sm" style={{ marginTop: 6 }}>Last updated: June 2026</Text>
+      </div>
+      <Stack gap={20} style={{ padding: `0 ${space[5]} ${space[10]}` }}>
+        {[
+          { title: 'What Are Cookies', body: 'Cookies are small text files stored on your device that help us maintain your session and preferences. As a mobile app, Marketer-Pro uses app storage (AsyncStorage / Capacitor Preferences) rather than browser cookies for most functions.' },
+          { title: 'What We Store Locally', body: 'We store your authentication session token locally to keep you logged in between sessions. We store your last-selected brand and notification preferences locally for performance. We do not use advertising cookies or tracking pixels.' },
+          { title: 'Analytics', body: 'We use anonymous usage analytics to understand how the app is used and improve it. This data does not contain personal identifiers. You can opt out of analytics in Settings → Notifications.' },
+          { title: 'Third Parties', body: 'Stripe may use cookies when you visit the billing portal (a Stripe-hosted page). Social platforms you connect to have their own cookie policies which govern your use of those platforms.' },
+          { title: 'Control', body: `You can clear all locally stored app data by deleting and reinstalling the app, or by using the Export and Delete Account flow in Settings. Contact ${SUPPORT.email} for questions.` },
+        ].map(({ title, body }) => (
+          <div key={title}>
+            <Text variant="gold" size="sm" weight="bold" uppercase style={{ letterSpacing: letterSpacings.wider, marginBottom: 10, display: 'block' }}>{title}</Text>
+            <Text variant="tertiary" size="base" style={{ lineHeight: 1.8 }}>{body}</Text>
+          </div>
+        ))}
+      </Stack>
+    </Container>
+  );
+      }    { tech: 'onboarding_complete', purpose: 'Prevents onboarding from repeating',                     duration: 'Persistent' },
   ];
 
   const functionalRows: TableRow[] = [
