@@ -1,79 +1,103 @@
+'use client';
 
-import { createContext, useState, type PropsWithChildren } from 'react';
-import type { CinematicState, GenerationRequest, GenerationResult, CinematicEngineContextValue } from './types';
-import { transition } from './stateMachine';
-import { VaultDoorScene } from './scenes/VaultDoorScene';
-import { ReactorScene } from './scenes/ReactorScene';
-import { PresentationChamberScene } from './scenes/PresentationChamberScene';
+// ─────────────────────────────────────────────────────────────────────────────
+// CINEMATIC ENGINE — PROVIDER
+// Wraps the Desk page. Renders the active scene based on engine phase.
+// Scenes are lazy-loaded to keep the Desk bundle small.
+// ─────────────────────────────────────────────────────────────────────────────
 
-export const CinematicEngineContext = createContext<CinematicEngineContextValue | null>(null);
+import { createContext, useContext, Suspense, lazy, type ReactNode } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { useCinematicEngine } from './useCinematicEngine';
+import type {
+  CinematicEngineContextValue,
+  CinematicEngineCallbacks,
+} from './types';
 
-interface CinematicEngineProviderProps extends PropsWithChildren {
-  onComplete?: () => void;
+const VaultDoorScene          = lazy(() => import('./scenes/VaultDoorScene'));
+const ReactorScene             = lazy(() => import('./scenes/ReactorScene'));
+const PresentationChamberScene = lazy(() => import('./scenes/PresentationChamberScene'));
+
+const CinematicEngineContext = createContext<CinematicEngineContextValue | null>(null);
+
+export function useCinematicEngineContext(): CinematicEngineContextValue {
+  const ctx = useContext(CinematicEngineContext);
+  if (!ctx) {
+    throw new Error('useCinematicEngineContext must be used within CinematicEngineProvider');
+  }
+  return ctx;
 }
 
-export const CinematicEngineProvider: React.FC<CinematicEngineProviderProps> = ({
+interface CinematicEngineProviderProps extends CinematicEngineCallbacks {
+  children: ReactNode;
+}
+
+/**
+ * SceneFallback — shown while a lazy scene chunk loads.
+ * Matches the void background so there's no flash of white.
+ */
+function SceneFallback() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: '#060912',
+      }}
+    />
+  );
+}
+
+export function CinematicEngineProvider({
   children,
-  onComplete,
-}) => {
-  const [state, setState] = useState<CinematicState>('idle');
-  const [result, setResult] = useState<GenerationResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const startSequence = (req: GenerationRequest) => {
-    setError(null);
-    setResult(null);
-    setState(transition('idle', 'vault'));
-
-    // Kick off backend generation in parallel with the cinematic sequence
-    void (async () => {
-      try {
-        const res = await fetch('/api/content/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(req),
-        });
-        const data = (await res.json()) as GenerationResult;
-        setResult(data);
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : 'Generation failed';
-        setError(message);
-      }
-    })();
-  };
-
-  const value: CinematicEngineContextValue = {
-    state,
-    startSequence,
-    result,
-    error,
-  };
+  onGenerate,
+  onArtifactSave,
+  onSchedule,
+  onReportContent,
+}: CinematicEngineProviderProps) {
+  const engine = useCinematicEngine({ onGenerate, onArtifactSave, onSchedule, onReportContent });
 
   return (
-    <CinematicEngineContext.Provider value={value}>
+    <CinematicEngineContext.Provider value={engine}>
       {children}
 
-      {/* Overlay scenes based on state */}
-      {state === 'vault' && (
-        <VaultDoorScene onDone={() => setState(transition(state, 'reactor'))} />
-      )}
-      {state === 'reactor' && (
-        <ReactorScene
-          onDone={() => setState(transition(state, 'chamber'))}
-          onAbort={() => setState(transition(state, 'idle'))}
-        />
-      )}
-      {state === 'chamber' && (
-        <PresentationChamberScene
-          result={result}
-          error={error}
-          onDone={() => {
-            setState(transition(state, error ? 'error' : 'complete'));
-            onComplete?.();
-          }}
-        />
-      )}
+      {/* Overlay scenes — render on top of the Desk based on phase */}
+      <AnimatePresence mode="wait">
+        {engine.phase === 'vault' && (
+          <Suspense fallback={<SceneFallback />} key="vault">
+            <VaultDoorScene
+              onComplete={engine.vaultComplete}
+              onAbort={engine.abort}
+            />
+          </Suspense>
+        )}
+
+        {(engine.phase === 'reactor' || engine.phase === 'generating') && (
+          <Suspense fallback={<SceneFallback />} key="reactor">
+            <ReactorScene
+              switches={engine.switches}
+              isGenerating={engine.phase === 'generating'}
+              onToggleSwitch={engine.toggleSwitch}
+              onPullLever={engine.pullLever}
+            />
+          </Suspense>
+        )}
+
+        {(engine.phase === 'presentation' || engine.phase === 'error') && (
+          <Suspense fallback={<SceneFallback />} key="presentation">
+            <PresentationChamberScene
+              result={engine.result}
+              error={engine.error}
+              onReturn={engine.reset}
+              onRetry={engine.retry}
+              onSave={onArtifactSave}
+              onSchedule={onSchedule}
+              onReport={onReportContent}
+            />
+          </Suspense>
+        )}
+      </AnimatePresence>
     </CinematicEngineContext.Provider>
   );
-};
+}
