@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ─────────────────────────────────────────────────────────────────────────
+     ANDROID MANIFEST
+     All permissions declared with justification comments.
+     Required for Google Play Data Safety form.
+     ──────────────────────────────────────────────────────────────────────── -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="app.marketerpro.office">
+
+    <!-- Internet access — required for all API calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Network state — for offline detection banner -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Vibration — required for haptic feedback in cinematic engine -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Camera — for future avatar upload feature -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Read external storage — for attaching media to posts (API < 33) -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- Read media images — API 33+ (replaces READ_EXTERNAL_STORAGE) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- Post notifications — for scheduled post alerts -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:label="@string/title_activity_main"
+            android:launchMode="singleTask"
+            android:exported="true"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:windowSoftInputMode="adjustResize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep link for OAuth callbacks -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="marketer-pro.app"
+                    android:pathPrefix="/auth/callback" />
+            </intent-filter>
+
+        </activity>
+    </application>
+
+</manifest>
