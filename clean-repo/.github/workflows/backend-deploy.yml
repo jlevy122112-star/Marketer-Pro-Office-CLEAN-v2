@@ -1,3 +1,8 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# BACKEND CI/CD — GitHub Actions
+# Triggers on push to main. Runs tests, builds, deploys to Railway.
+# ─────────────────────────────────────────────────────────────────────────────
+
 name: Backend Deploy
 
 on:
@@ -5,36 +10,62 @@ on:
     branches: [main]
     paths:
       - 'apps/backend/**'
+      - 'clean-repo/apps/backend/**'
       - '.github/workflows/backend-deploy.yml'
   workflow_dispatch:
 
-env:
-  NODE_VERSION: '20'
-  PNPM_VERSION: '8'
+concurrency:
+  group: backend-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ── Type check + lint ─────────────────────────────────────────────────────────
-  check:
-    name: Type check and lint
+
+  # ── Type check + lint ────────────────────────────────────────────────────────
+  typecheck:
+    name: Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
+        with: { version: '9' }
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Type check
-        run: pnpm --filter @marketer-pro/backend type-check
+      - name: Prisma generate
+        run: pnpm --filter @marketer-pro/backend db:generate
 
+      - name: Type check
+        run: pnpm --filter @marketer-pro/backend typecheck
+
+  # ── Deploy to Railway ────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Railway
+    needs: typecheck
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy backend
+        run: |
+          cd apps/backend
+          railway up --service marketer-pro-backend --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Notify deployment
+        if: success()
+        run: echo "✅ Backend deployed to Railway successfully"
   # ── Build ─────────────────────────────────────────────────────────────────────
   build:
     name: Build backend
