@@ -1,3 +1,14 @@
+(Snippet for Milestone)
+// Extend tracking logic to satisfy "full Vault progression system"
+export const trackAction = async (actionType: string) => {
+  if (actionType === 'ai_generation_success') {
+    const count = await getGenerationCount();
+    if (count === 5) {
+      // Trigger level-up notification
+      emitNotification('Milestone Unlocked: Creative Catalyst!');
+    }
+  }
+};
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { UserProgression, OfficeState, Achievement, LootboxReward } from '../types';
 import { useAuth } from './AuthContext';
@@ -90,16 +101,4 @@ export const useProgression = (): ProgressionContextValue => {
   const ctx = useContext(ProgressionContext);
   if (!ctx) throw new Error('useProgression must be used within ProgressionProvider');
   return ctx;
-};
-
-(Snippet for Milestone)
-// Extend tracking logic to satisfy "full Vault progression system"
-export const trackAction = async (actionType: string) => {
-  if (actionType === 'ai_generation_success') {
-    const count = await getGenerationCount();
-    if (count === 5) {
-      // Trigger level-up notification
-      emitNotification('Milestone Unlocked: Creative Catalyst!');
-    }
-  }
 };
