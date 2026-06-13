@@ -1,40 +1,50 @@
-(Snippet for Milestone)
-// Extend tracking logic to satisfy "full Vault progression system"
-export const trackAction = async (actionType: string) => {
-  if (actionType === 'ai_generation_success') {
-    const count = await getGenerationCount();
-    if (count === 5) {
-      // Trigger level-up notification
-      emitNotification('Milestone Unlocked: Creative Catalyst!');
-    }
-  }
-};
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { UserProgression, OfficeState, Achievement, LootboxReward } from '../types';
-import { useAuth } from './AuthContext';
+'use client';
 
-interface ProgressionContextValue {
-  progression: UserProgression | null;
-  officeState: OfficeState | null;
-  achievements: Achievement[];
-  isLoading: boolean;
-  awardXp: (amount: number, reason: string) => Promise<void>;
-  openLootbox: () => Promise<LootboxReward[]>;
-  refreshProgression: () => Promise<void>;
+// ─────────────────────────────────────────────────────────────────────────────
+// PROGRESSION CONTEXT
+// Exposes the reward engine state globally so any component
+// can read XP / level / streak without prop-drilling.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  createContext, useContext, type ReactNode,
+} from 'react';
+import { useOfficeEvolution } from '@marketer-pro/reward-engine';
+import { useAuth } from './AuthContext';
+import type { OfficeState, EventType } from '@marketer-pro/reward-engine';
+
+interface ProgressionCtx {
+  state:       OfficeState | null;
+  loading:     boolean;
+  recordEvent: (eventType: EventType, metadata?: Record<string, unknown>) => Promise<void>;
 }
 
-const ProgressionContext = createContext<ProgressionContextValue | null>(null);
+const Ctx = createContext<ProgressionCtx | null>(null);
 
-export const ProgressionProvider = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  const [progression, setProgression] = useState<UserProgression | null>(null);
-  const [officeState, setOfficeState] = useState<OfficeState | null>(null);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+export function ProgressionProvider({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
 
-  const fetchProgression = async () => {
-    if (!isAuthenticated) return;
-    setIsLoading(true);
+  const engine = useOfficeEvolution({
+    getToken:          async () => session?.access_token ?? null,
+    recordLoginOnMount:true,
+  });
+
+  return (
+    <Ctx.Provider value={{
+      state:       engine.state,
+      loading:     engine.loading,
+      recordEvent: engine.recordEvent,
+    }}>
+      {children}
+    </Ctx.Provider>
+  );
+}
+
+export function useProgressionContext(): ProgressionCtx {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error('useProgressionContext must be inside ProgressionProvider');
+  return ctx;
+}    setIsLoading(true);
     try {
       const [progRes, officeRes, achRes] = await Promise.all([
         fetch('/api/progression', { credentials: 'include' }),
