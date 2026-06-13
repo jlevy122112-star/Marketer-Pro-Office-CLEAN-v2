@@ -1,0 +1,34 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// ANDROID BUILD CONFIG PATCH
+// Add this to your existing android/app/build.gradle
+// Ensures targetSdk 35 for Google Play compliance (required Aug 2025)
+// ─────────────────────────────────────────────────────────────────────────────
+
+android {
+    compileSdkVersion 35
+    defaultConfig {
+        applicationId "app.marketerpro.office"
+        minSdkVersion 24
+        targetSdkVersion 35          // Required for Google Play Aug 2025
+        versionCode 1
+        versionName "1.0.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+    bundle {
+        language {
+            enableSplit = true       // AAB language splitting
+        }
+        density {
+            enableSplit = true       // AAB density splitting
+        }
+        abi {
+            enableSplit = true       // AAB ABI splitting
+        }
+    }
+}
