@@ -1,152 +1,74 @@
+'use client';
+
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Shield, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { Container, Stack, Heading, Text, Row } from '@marketer-pro/ui';
+import { colors, fonts, space, radii, gradients } from '@marketer-pro/ui';
+import { SUPPORT } from '../../lib/constants';
 
-interface PolicyItem {
-  title: string;
-  description: string;
-  route?: string;
-  url?: string;
-  updatedAt: string;
-}
-
-const POLICIES: PolicyItem[] = [
-  {
-    title: 'Privacy Policy',
-    description: 'How we collect, use, and protect your personal data.',
-    route: '/privacy',
-    updatedAt: '1 Jan 2026',
-  },
-  {
-    title: 'Terms of Use',
-    description: 'The rules and conditions for using Marketer Pro Office.',
-    route: '/terms',
-    updatedAt: '1 Jan 2026',
-  },
-  {
-    title: 'Cookie Policy',
-    description: 'How we use local storage and session tokens.',
-    route: '/legal/cookies',
-    updatedAt: '1 Jan 2026',
-  },
-  {
-    title: 'Acceptable Use Policy',
-    description: 'What content and behaviour is and is not permitted.',
-    route: '/legal/acceptable-use',
-    updatedAt: '1 Jan 2026',
-  },
-  {
-    title: 'Refund Policy',
-    description: 'How subscription refunds work on iOS, Android, and Enterprise.',
-    url: 'https://marketerprooffice.com/legal/refunds',
-    updatedAt: '1 Jan 2026',
-  },
-  {
-    title: 'Data Processing Agreement',
-    description: 'GDPR Article 28 DPA for users who process personal data through our Service.',
-    url: 'https://marketerprooffice.com/legal/dpa',
-    updatedAt: '1 Jan 2026',
-  },
-  {
-    title: 'Security Policy',
-    description: 'Our security practices, responsible disclosure, and incident response.',
-    url: 'https://marketerprooffice.com/security',
-    updatedAt: '1 Jan 2026',
-  },
+const LEGAL_LINKS = [
+  { label: 'Privacy Policy',       path: '/legal/privacy',         icon: '🔒' },
+  { label: 'Terms of Use',         path: '/legal/terms',           icon: '📋' },
+  { label: 'Acceptable Use',       path: '/legal/acceptable-use',  icon: '✅' },
+  { label: 'Cookie Policy',        path: '/legal/cookies',         icon: '🍪' },
 ];
 
-export const LegalIndexPage = () => {
+export default function LegalIndexPage() {
   const navigate = useNavigate();
 
-  const handleTap = (policy: PolicyItem) => {
-    if (policy.route) {
-      navigate(policy.route);
-    } else if (policy.url) {
-      window.open(policy.url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-void-900 safe-top">
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] bg-void-900/95 backdrop-blur-md">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
+    <Container tabBarOffset={false}>
+      <div style={{ padding: `${space[4]} ${space[5]} ${space[3]}` }}>
+        <button onClick={() => navigate(-1)} aria-label="Go back"
+          style={{ color: colors.text.tertiary, background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginBottom: space[4] }}>
+          <ArrowLeft size={20} />
         </button>
-        <div>
-          <p className="font-display text-base tracking-[0.15em] text-classified">LEGAL</p>
-          <p className="font-classified text-[9px] tracking-[0.2em] text-slate-600">POLICIES & AGREEMENTS</p>
-        </div>
+        <Heading level={2} gold>Legal</Heading>
       </div>
 
-      <div className="px-4 py-6 space-y-6 safe-bottom">
-        {/* Badge */}
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-classified/20 bg-classified/5">
-          <div className="w-9 h-9 rounded-xl bg-classified/10 flex items-center justify-center flex-shrink-0">
-            <Shield className="w-5 h-5 text-classified" />
-          </div>
-          <div>
-            <p className="text-sm font-heading text-slate-300">Your rights are protected</p>
-            <p className="text-xs text-slate-500 mt-0.5 font-body">
-              All our policies comply with GDPR, CCPA, and App Store / Google Play requirements.
-            </p>
-          </div>
-        </div>
+      <Stack gap={8} style={{ padding: `0 ${space[5]} ${space[10]}` }}>
+        {LEGAL_LINKS.map(({ label, path, icon }) => (
+          <button
+            key={path}
+            onClick={() => navigate(path)}
+            aria-label={label}
+            style={{
+              display:       'flex',
+              alignItems:    'center',
+              gap:           14,
+              padding:       '16px',
+              borderRadius:  radii.xl,
+              background:    'rgba(255,255,255,0.03)',
+              border:        `1px solid ${colors.border.subtle}`,
+              cursor:        'pointer',
+              width:         '100%',
+              textAlign:     'left',
+              transition:    'all 0.2s',
+            }}
+          >
+            <span style={{ fontSize: 22, flexShrink: 0 }} aria-hidden>{icon}</span>
+            <Text variant="secondary" size="base" weight="semibold" style={{ flex: 1, fontFamily: fonts.display }}>
+              {label}
+            </Text>
+            <ChevronRight size={16} color={colors.text.faint} />
+          </button>
+        ))}
 
-        {/* Policy list */}
-        <div className="space-y-1.5">
-          {POLICIES.map((policy, i) => (
-            <motion.button
-              key={policy.title}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => handleTap(policy)}
-              className="w-full flex items-center gap-3 p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all text-left group"
+        <div style={{ marginTop: space[6], padding: space[4], borderRadius: radii.xl, background: colors.classified.ghost, border: `1px solid ${colors.classified.border}` }}>
+          <Text variant="faint" size="xs" weight="bold" uppercase style={{ letterSpacing: '0.3em', marginBottom: 8, display: 'block' }}>
+            Questions?
+          </Text>
+          <Text variant="tertiary" size="sm" style={{ lineHeight: 1.7 }}>
+            Contact us at{' '}
+            <span
+              onClick={() => window.open(`mailto:${SUPPORT.email}`)}
+              style={{ color: colors.classified.DEFAULT, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-heading text-slate-300 group-hover:text-slate-100 transition-colors">
-                  {policy.title}
-                </p>
-                <p className="text-xs text-slate-600 mt-0.5 font-body line-clamp-1">
-                  {policy.description}
-                </p>
-                <p className="text-[10px] text-slate-700 mt-1 font-classified tracking-wider">
-                  Updated {policy.updatedAt}
-                </p>
-              </div>
-              {policy.url ? (
-                <ExternalLink className="w-4 h-4 text-slate-700 group-hover:text-slate-500 flex-shrink-0 transition-colors" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-slate-700 group-hover:text-slate-500 flex-shrink-0 transition-colors" />
-              )}
-            </motion.button>
-          ))}
+              {SUPPORT.email}
+            </span>
+          </Text>
         </div>
-
-        {/* Contact footer */}
-        <div className="space-y-1 pt-2">
-          <p className="font-classified text-[10px] tracking-[0.2em] text-slate-600 uppercase px-1">
-            Legal Enquiries
-          </p>
-          <div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] space-y-1">
-            {[
-              { label: 'Privacy',    email: 'privacy@marketerprooffice.com'    },
-              { label: 'Legal',      email: 'legal@marketerprooffice.com'      },
-              { label: 'Security',   email: 'security@marketerprooffice.com'   },
-              { label: 'DPA / GDPR', email: 'dpa@marketerprooffice.com'        },
-            ].map(({ label, email }) => (
-              <div key={label} className="flex items-center justify-between py-1">
-                <span className="text-xs text-slate-500 font-heading w-20">{label}</span>
-                <span className="text-xs text-classified/70 font-classified tracking-wide">{email}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      </Stack>
+    </Container>
   );
-};
+            }
