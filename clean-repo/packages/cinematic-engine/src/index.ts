@@ -1,12 +1,39 @@
-export { CinematicEngineProvider, CinematicEngineContext } from './CinematicEngineProvider';
+// ─────────────────────────────────────────────────────────────────────────────
+// CINEMATIC ENGINE — PUBLIC API
+// Everything the host app (mobile-client Desk page) imports comes from here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export {
+  CinematicEngineProvider,
+  useCinematicEngineContext,
+} from './CinematicEngineProvider';
+
 export { useCinematicEngine } from './useCinematicEngine';
-export { VaultDoorScene } from './scenes/VaultDoorScene';
-export { ReactorScene } from './scenes/ReactorScene';
-export { PresentationChamberScene } from './scenes/PresentationChamberScene';
-export { GeneratorForm } from './scenes/GeneratorForm';
+
+export {
+  engineReducer,
+  initialEngineState,
+  canToggleSwitch,
+  allSwitchesArmed,
+  cascadeSwitchOff,
+  sortArtifactsByScore,
+  PHASE_TIMEOUTS_MS,
+} from './stateMachine';
+
 export type {
-  CinematicState,
+  CinematicPhase,
+  CinematicEngineState,
+  CinematicEngineActions,
+  CinematicEngineContextValue,
+  CinematicEngineCallbacks,
   GenerationRequest,
   GenerationResult,
-  CinematicEngineContextValue,
+  GeneratedArtifact,
+  ReactorSwitchKey,
+  ReactorSwitchState,
+  PlatformId,
+  ContentType,
+  BrandTone,
 } from './types';
+
+export { REACTOR_SWITCH_ORDER } from './types';
