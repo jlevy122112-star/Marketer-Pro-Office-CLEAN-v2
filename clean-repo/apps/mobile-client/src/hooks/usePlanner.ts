@@ -1,10 +1,15 @@
 import { useMemo } from 'react';
-import { useScheduledPosts } from './useScheduledPosts'; // Existing hook
-import { startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 
-export function usePlanner(brandId?: string) {
-  const { posts, loading, schedulePost, deletePost } = useScheduledPosts(brandId);
+// Import your existing post type here
+interface ScheduledPost {
+  id: string;
+  scheduledFor: string; // ISO string
+  title: string;
+  // ... other fields
+}
 
+export function usePlanner(brandId: string | undefined, allPosts: ScheduledPost[]) {
   const calendarDays = useMemo(() => {
     const start = startOfMonth(new Date());
     const end = endOfMonth(new Date());
@@ -12,16 +17,13 @@ export function usePlanner(brandId?: string) {
   }, []);
 
   const getPostsForDay = (date: Date) => {
-    return posts.filter(p => 
-      new Date(p.scheduledFor).toDateString() === date.toDateString()
+    return allPosts.filter(post => 
+      isSameDay(new Date(post.scheduledFor), date)
     );
   };
 
-  return { 
-    calendarDays, 
-    getPostsForDay, 
-    schedulePost, 
-    deletePost, 
-    loading 
+  return {
+    calendarDays,
+    getPostsForDay
   };
 }
