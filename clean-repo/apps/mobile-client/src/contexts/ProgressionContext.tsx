@@ -91,3 +91,15 @@ export const useProgression = (): ProgressionContextValue => {
   if (!ctx) throw new Error('useProgression must be used within ProgressionProvider');
   return ctx;
 };
+
+(Snippet for Milestone)
+// Extend tracking logic to satisfy "full Vault progression system"
+export const trackAction = async (actionType: string) => {
+  if (actionType === 'ai_generation_success') {
+    const count = await getGenerationCount();
+    if (count === 5) {
+      // Trigger level-up notification
+      emitNotification('Milestone Unlocked: Creative Catalyst!');
+    }
+  }
+};
