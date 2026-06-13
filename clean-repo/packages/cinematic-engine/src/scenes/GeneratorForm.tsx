@@ -1,65 +1,176 @@
+'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Wand2, X } from 'lucide-react';
-import { useCinematicEngine } from '../useCinematicEngine';
-import type { GenerationRequest } from '../types';
+// ─────────────────────────────────────────────────────────────────────────────
+// GENERATOR FORM
+// Lives on the Desk page (not an overlay). Calls engine.start() on submit,
+// which kicks off the Vault Door → Reactor → Presentation sequence.
+// Audit upgrades applied:
+//   - Prompt starters for cold-start problem
+//   - Sticky generate button in gradient-fade footer
+//   - Per-platform character limit guidance
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useState, useMemo } from 'react';
+import { Zap } from 'lucide-react';
+import {
+  ACTIVE_PLATFORMS,
+  COMING_SOON_PLATFORMS,
+  CONTENT_TYPES,
+  PROMPT_STARTERS,
+  PLATFORM_CHAR_LIMITS,
+} from '../constants';
+import type { GenerationRequest, PlatformId, ContentType, BrandTone } from '../types';
 
 interface GeneratorFormProps {
-  brandId: string;
-  onClose: () => void;
+  onSubmit:     (request: GenerationRequest) => void;
+  brandId:      string;
+  defaultTone:  BrandTone;
+  disabled?:    boolean;
 }
 
-type ContentType = GenerationRequest['contentType'];
-
-const PLATFORMS = ['instagram', 'facebook', 'tiktok', 'linkedin', 'x'] as const;
-const CONTENT_TYPES: ContentType[] = ['post', 'ad', 'script'];
-
-export const GeneratorForm: React.FC<GeneratorFormProps> = ({ brandId, onClose }) => {
-  const { startSequence, state } = useCinematicEngine();
-  const [platforms, setPlatforms] = useState<string[]>(['instagram']);
-  const [goal, setGoal] = useState('');
+export default function GeneratorForm({ onSubmit, brandId, defaultTone, disabled }: GeneratorFormProps) {
+  const [prompt, setPrompt]       = useState('');
+  const [platforms, setPlatforms] = useState<PlatformId[]>(['instagram', 'facebook']);
   const [contentType, setContentType] = useState<ContentType>('post');
 
-  const isActive = state !== 'idle';
+  const tightestLimit = useMemo(() => {
+    if (platforms.length === 0) return null;
+    return Math.min(...platforms.map((p) => PLATFORM_CHAR_LIMITS[p]));
+  }, [platforms]);
 
-  const handleTogglePlatform = (p: string) => {
-    setPlatforms(prev =>
-      prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p],
-    );
-  };
+  function togglePlatform(id: PlatformId) {
+    setPlatforms((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  }
 
-  const handleFire = () => {
-    if (!goal.trim() || platforms.length === 0) return;
-    const req: GenerationRequest = {
+  function handleSubmit() {
+    if (!prompt.trim() || platforms.length === 0 || disabled) return;
+    onSubmit({
       brandId,
-      platforms,
-      goal: goal.trim(),
+      prompt: prompt.trim(),
       contentType,
-    };
-    startSequence(req);
+      platforms,
+      tone: defaultTone,
+      includeHashtags: true,
+      includeAltText: true,
+      contentFilterEnabled: true,
+    });
+  }
+
+  const chip = (active: boolean, color?: string): React.CSSProperties => ({
+    padding: '7px 12px', borderRadius: 10, fontSize: 11,
+    fontFamily: "'Syne',sans-serif", fontWeight: 700, letterSpacing: '0.1em',
+    textTransform: 'uppercase', cursor: 'pointer',
+    border: `1px solid ${active ? (color ? `${color}60` : 'rgba(201,168,76,0.45)') : 'rgba(255,255,255,0.08)'}`,
+    background: active ? (color ? `${color}18` : 'rgba(201,168,76,0.12)') : 'transparent',
+    color: active ? (color ?? '#C9A84C') : 'rgba(255,255,255,0.38)',
+    transition: 'all 0.2s',
+  });
+
+  const label: React.CSSProperties = {
+    display: 'block', fontFamily: "'Syne',sans-serif", fontSize: 9, fontWeight: 700,
+    letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.65)', marginBottom: 8,
   };
+
+  const canGenerate = !!prompt.trim() && platforms.length > 0 && !disabled;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 24 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed inset-0 z-40 flex items-end md:items-center justify-center p-4"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: 18, borderRadius: 20, background: 'rgba(13,17,32,0.85)', border: '1px solid rgba(201,168,76,0.18)', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Form panel */}
-      <div className="relative z-10 w-full max-w-md panel-glass rounded-2xl border border-white/[0.08] p-6 space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-display text-lg tracking-[0.2em] text-classified">
+        {/* Prompt */}
+        <div>
+          <label style={label} htmlFor="generator-prompt">What are we creating today?</label>
+          <textarea
+            id="generator-prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Describe your campaign, product launch, event or idea…"
+            rows={3}
+            style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontFamily: "'DM Sans',sans-serif", fontSize: 14, outline: 'none', resize: 'none', lineHeight: 1.6, boxSizing: 'border-box' }}
+            onFocus={(e) => e.target.style.borderColor = 'rgba(201,168,76,0.45)'}
+            onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+          />
+          {tightestLimit && prompt.length > 0 && (
+            <p style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: prompt.length > tightestLimit ? '#F87171' : 'rgba(255,255,255,0.25)', marginTop: 6, textAlign: 'right' }}>
+              {prompt.length} / {tightestLimit} (tightest platform limit)
+            </p>
+          )}
+
+          {/* Prompt starters — cold start fix */}
+          {!prompt && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
+              <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(201,168,76,0.45)' }}>
+                Try one of these
+              </p>
+              {PROMPT_STARTERS.map((s) => (
+                <button key={s} onClick={() => setPrompt(s.slice(2).trim())}
+                  style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', fontFamily: "'DM Sans',sans-serif", fontSize: 12, cursor: 'pointer' }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Platforms */}
+        <div>
+          <label style={label}>Platforms</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {ACTIVE_PLATFORMS.map((p) => (
+              <button key={p.id} onClick={() => togglePlatform(p.id)} style={chip(platforms.includes(p.id), p.color)}>
+                {p.name}
+              </button>
+            ))}
+            {COMING_SOON_PLATFORMS.map((p) => (
+              <div key={p.id} style={{ padding: '7px 12px', borderRadius: 10, fontSize: 11, fontFamily: "'Syne',sans-serif", fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: 'transparent', border: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.15)', cursor: 'not-allowed' }}>
+                {p.name} · Soon
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Content type */}
+        <div>
+          <label style={label}>Content Type</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {CONTENT_TYPES.map((ct) => (
+              <button key={ct.id} onClick={() => setContentType(ct.id)} style={chip(contentType === ct.id)}>
+                {ct.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky generate button */}
+      <div style={{
+        position: 'sticky', bottom: 0, left: 0, right: 0,
+        padding: '12px 0',
+        background: 'linear-gradient(0deg, rgba(6,9,18,1) 60%, rgba(6,9,18,0) 100%)',
+        zIndex: 10,
+      }}>
+        <button
+          onClick={handleSubmit}
+          disabled={!canGenerate}
+          aria-label="Generate content"
+          style={{
+            width: '100%', padding: '16px 0', borderRadius: 16, border: 'none',
+            cursor: canGenerate ? 'pointer' : 'not-allowed',
+            background: canGenerate ? 'linear-gradient(135deg,#C9A84C,#9d7c2e)' : 'rgba(201,168,76,0.2)',
+            color: '#060912', fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 13,
+            letterSpacing: '0.25em', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            boxShadow: canGenerate ? '0 0 40px rgba(201,168,76,0.3)' : 'none',
+            transition: 'all 0.2s',
+          }}
+        >
+          <Zap size={16} />
+          Generate Content
+        </button>
+      </div>
+    </div>
+  );
+    }            <p className="font-display text-lg tracking-[0.2em] text-classified">
               VAULT GENERATOR
             </p>
             <p className="font-body text-xs text-slate-500 mt-0.5">
