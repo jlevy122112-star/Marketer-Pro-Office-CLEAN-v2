@@ -1,40 +1,349 @@
-// Supabase uses PostgreSQL.
-// This Prisma schema mirrors the exact tables defined in the build document.
-// Run: npx prisma db push  OR  use the SQL migration in /infra/scripts/
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// PRISMA SCHEMA
+// Mirrors the SQL schema for type-safe database queries.
+// Run: pnpm --filter @marketer-pro/backend db:generate
+// ─────────────────────────────────────────────────────────────────────────────
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// ── users ──────────────────────────────────
-model users {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  password_hash String
-  name          String
-  role          String    @default("user")
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
 }
 
-// ── workspaces ─────────────────────────────
-model workspaces {
-  id            String   @id @default(uuid())
-  owner_user_id String
-  name          String
-  created_at    DateTime @default(now())
+model Profile {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  displayName         String    @default("") @map("display_name")
+  avatarUrl           String?   @map("avatar_url")
+  passwordHash        String?   @map("password_hash")
+  planId              String    @default("free") @map("plan_id")
+  xp                  Int       @default(0)
+  level               Int       @default(1)
+  streakCurrent       Int       @default(0) @map("streak_current")
+  streakLongest       Int       @default(0) @map("streak_longest")
+  streakLastActive    DateTime? @map("streak_last_active") @db.Date
+  totalPosts          Int       @default(0) @map("total_posts")
+  totalGenerations    Int       @default(0) @map("total_generations")
+  onboardingComplete  Boolean   @default(false) @map("onboarding_complete")
+  workspaceName       String?   @map("workspace_name")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  brands                Brand[]
+  campaigns             Campaign[]
+  generationResults     GenerationResult[]
+  scheduledPosts        ScheduledPost[]
+  platformConnections   PlatformConnection[]
+  subscription          Subscription?
+  userAchievements      UserAchievement[]
+  usageEvents           UsageEvent[]
+  notificationPrefs     NotificationPreference?
+  contentItems          ContentItem[]
+  contentReports        ContentReport[]
+  audienceSegments      AudienceSegment[]
+  analyticsSnapshots    AnalyticsSnapshot[]
+  dataExportRequests    DataExportRequest[]
+
+  @@map("profiles")
 }
 
-// ── brands ─────────────────────────────────
-model brands {
-  id              String   @id @default(uuid())
-  workspace_id    String
+model Brand {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
   name            String
+  industry        String    @default("General")
+  tone            String    @default("professional")
+  targetAudience  String?   @map("target_audience")
+  workspaceName   String?   @map("workspace_name")
+  logoUrl         String?   @map("logo_url")
+  colorPrimary    String?   @map("color_primary")
+  colorSecondary  String?   @map("color_secondary")
+  platforms       String[]  @default([])
+  isDefault       Boolean   @default(false) @map("is_default")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user              Profile            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns         Campaign[]
+  generationResults GenerationResult[]
+  scheduledPosts    ScheduledPost[]
+  contentItems      ContentItem[]
+  audienceSegments  AudienceSegment[]
+
+  @@map("brands")
+}
+
+model AudienceSegment {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  brandId     String?  @map("brand_id")
+  name        String
+  description String?
+  ageRange    String?  @map("age_range")
+  interests   String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user  Profile @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  brand Brand?  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("audience_segments")
+}
+
+model Campaign {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  brandId     String?   @map("brand_id")
+  name        String
+  description String?
+  goal        String?
+  status      String    @default("draft")
+  startDate   DateTime? @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  budget      Decimal?  @db.Decimal(10, 2)
+  platforms   String[]  @default([])
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user             Profile          @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  brand            Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  generationResults GenerationResult[]
+  contentItems     ContentItem[]
+
+  @@map("campaigns")
+}
+
+model GenerationResult {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  brandId      String?  @map("brand_id")
+  campaignId   String?  @map("campaign_id")
+  prompt       String
+  contentType  String   @default("post") @map("content_type")
+  platforms    String[] @default([])
+  tone         String   @default("professional")
+  artifacts    Json     @default("[]")
+  status       String   @default("pending")
+  tokensUsed   Int      @default(0) @map("tokens_used")
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         Profile       @relation(fields: [userId],     references: [id], onDelete: Cascade)
+  brand        Brand?        @relation(fields: [brandId],    references: [id], onDelete: SetNull)
+  campaign     Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  contentItems ContentItem[]
+  contentReports ContentReport[]
+
+  @@map("generation_results")
+}
+
+model ContentItem {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  brandId         String?  @map("brand_id")
+  campaignId      String?  @map("campaign_id")
+  generationId    String?  @map("generation_id")
+  platform        String
+  contentType     String   @default("post") @map("content_type")
+  copy            String
+  caption         String?
+  hashtags        String[] @default([])
+  altText         String?  @map("alt_text")
+  imageUrl        String?  @map("image_url")
+  imagePrompt     String?  @map("image_prompt")
+  adHeadline      String?  @map("ad_headline")
+  adDescription   String?  @map("ad_description")
+  characterCount  Int      @default(0) @map("character_count")
+  score           Int?
+  optimized       Boolean  @default(false)
+  status          String   @default("draft")
+  reported        Boolean  @default(false)
+  reportReason    String?  @map("report_reason")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user           Profile          @relation(fields: [userId],        references: [id], onDelete: Cascade)
+  brand          Brand?           @relation(fields: [brandId],       references: [id], onDelete: SetNull)
+  campaign       Campaign?        @relation(fields: [campaignId],    references: [id], onDelete: SetNull)
+  generation     GenerationResult? @relation(fields: [generationId], references: [id], onDelete: SetNull)
+  scheduledPosts ScheduledPost[]
+  contentReports ContentReport[]
+
+  @@map("content_items")
+}
+
+model ScheduledPost {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  brandId         String?   @map("brand_id")
+  contentItemId   String?   @map("content_item_id")
+  platform        String
+  content         String
+  hashtags        String[]  @default([])
+  altText         String?   @map("alt_text")
+  mediaUrls       String[]  @default([]) @map("media_urls")
+  scheduledFor    DateTime  @map("scheduled_for")
+  publishedAt     DateTime? @map("published_at")
+  status          String    @default("scheduled")
+  retryCount      Int       @default(0) @map("retry_count")
+  maxRetries      Int       @default(3) @map("max_retries")
+  errorMessage    String?   @map("error_message")
+  externalPostId  String?   @map("external_post_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user        Profile      @relation(fields: [userId],        references: [id], onDelete: Cascade)
+  brand       Brand?       @relation(fields: [brandId],       references: [id], onDelete: SetNull)
+  contentItem ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+
+  @@map("scheduled_posts")
+}
+
+model PlatformConnection {
+  id                     String    @id @default(uuid())
+  userId                 String    @map("user_id")
+  platform               String
+  accountId              String    @map("account_id")
+  accountName            String?   @map("account_name")
+  accountHandle          String?   @map("account_handle")
+  avatarUrl              String?   @map("avatar_url")
+  accessTokenEncrypted   String    @map("access_token_encrypted")
+  refreshTokenEncrypted  String?   @map("refresh_token_encrypted")
+  tokenExpiresAt         DateTime? @map("token_expires_at")
+  scopes                 String[]  @default([])
+  isActive               Boolean   @default(true) @map("is_active")
+  lastSyncedAt           DateTime? @map("last_synced_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("platform_connections")
+}
+
+model Subscription {
+  id                    String    @id @default(uuid())
+  userId                String    @unique @map("user_id")
+  planId                String    @default("free") @map("plan_id")
+  stripeCustomerId      String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId  String?   @unique @map("stripe_subscription_id")
+  status                String    @default("active")
+  interval              String    @default("monthly")
+  currentPeriodStart    DateTime? @map("current_period_start")
+  currentPeriodEnd      DateTime? @map("current_period_end")
+  cancelAtPeriodEnd     Boolean   @default(false) @map("cancel_at_period_end")
+  canceledAt            DateTime? @map("canceled_at")
+  trialEnd              DateTime? @map("trial_end")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model UserAchievement {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  key         String
+  xpAwarded   Int      @default(0) @map("xp_awarded")
+  unlockedAt  DateTime @default(now()) @map("unlocked_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("user_achievements")
+}
+
+model UsageEvent {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  eventType  String   @map("event_type")
+  platform   String?
+  metadata   Json?
+  xpAwarded  Int      @default(0) @map("xp_awarded")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("usage_events")
+}
+
+model NotificationPreference {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  postPublished Boolean  @default(true) @map("post_published")
+  postFailed    Boolean  @default(true) @map("post_failed")
+  weeklyReport  Boolean  @default(true) @map("weekly_report")
+  aiInsights    Boolean  @default(true) @map("ai_insights")
+  billingAlerts Boolean  @default(true) @map("billing_alerts")
+  newFeatures   Boolean  @default(false) @map("new_features")
+  pushEnabled   Boolean  @default(true) @map("push_enabled")
+  emailEnabled  Boolean  @default(true) @map("email_enabled")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model AnalyticsSnapshot {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  platform        String
+  date            DateTime @db.Date
+  impressions     BigInt   @default(0)
+  reach           BigInt   @default(0)
+  engagements     BigInt   @default(0)
+  clicks          BigInt   @default(0)
+  followers       Int      @default(0)
+  followerDelta   Int      @default(0) @map("follower_delta")
+  postsPublished  Int      @default(0) @map("posts_published")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform, date])
+  @@map("analytics_snapshots")
+}
+
+model ContentReport {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  contentItemId    String?  @map("content_item_id")
+  generationId     String?  @map("generation_id")
+  platform         String?
+  reason           String
+  artifactSnapshot Json?    @map("artifact_snapshot")
+  status           String   @default("pending")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user        Profile          @relation(fields: [userId],        references: [id], onDelete: Cascade)
+  contentItem ContentItem?     @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+  generation  GenerationResult? @relation(fields: [generationId], references: [id], onDelete: SetNull)
+
+  @@map("content_reports")
+}
+
+model DataExportRequest {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  status      String    @default("pending")
+  downloadUrl String?   @map("download_url")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("data_export_requests")
+}  name            String
   industry        String?
   logo_url        String?
   primary_color   String?
