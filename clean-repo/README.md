@@ -4,11 +4,9 @@
 
 Run your entire advertising & marketing campaign from one digital HQ.
 
----
 
 ## Mono-Repo Structure
 
-```
 Office-Edition/
 ├── package.json
 ├── tsconfig.json
@@ -26,9 +24,9 @@ Office-Edition/
 │   │   │   │   ├── errors.ts
 │   │   │   │   ├── logger.ts
 │   │   │   │   └── middleware/
-│   │   │   │       ├── errorHandler.ts
-│   │   │   │       ├── authGuard.ts
-│   │   │   │       └── requestLogger.ts
+│   │   │   │       ├──errorHandler.ts
+│   │   │   │       ├──authGuard.ts
+│   │   │   │       └──requestLogger.ts
 │   │   │   ├── auth/
 │   │   │   ├── users/
 │   │   │   ├── brands/
@@ -54,8 +52,8 @@ Office-Edition/
 │           │   ├── index.tsx
 │           │   ├── login.tsx
 │           │   ├── signup.tsx
-│           │   ├── forgot-password.tsx
-│           │   ├── reset-password.tsx
+│           │   ├──forgotpassword.tsx
+│           │   ├──resetpassword.tsx
 │           │   ├── onboarding/
 │           │   ├── office/
 │           │   ├── campaigns/
@@ -80,13 +78,33 @@ Office-Edition/
 │           │   └── analytics/
 │           ├── lib/
 │           └── styles/
-└── infra/
-    ├── docker/
-    ├── k8s/
-    └── scripts/
-```
+infra/
+├── scripts/
+│   ├── migrate.sql 
+│   └── setup.sh
+└── docker/
+    └── docker-compose.yml
 
----
+apps/backend/
+├── Dockerfile
+└── prisma/
+    └── schema.prisma
+
+apps/mobile-client/
+├── capacitor.config.ts
+├── store-metadata.md
+├── ios/
+│   └── ExportOptions.plist
+└── android/
+    ├── app/build.gradle
+    └── app/src/main/
+        ├── AndroidManifest.xml
+|-------|    └──res/xml/network_security_config.xml
+
+.github/workflows/
+├── backend-deploy.yml
+└── mobile-build.yml
+
 
 ## Tech Stack
 
@@ -132,7 +150,8 @@ Office-Edition/
 
 ## Getting Started
 
-```bash
+bash
+
 # 1. Install dependencies
 pnpm install
 
@@ -147,56 +166,54 @@ cp apps/frontend/.env.example apps/frontend/.env.local
 
 # 5. Run development servers
 pnpm dev
-```
 
----
 
 ## API Surface
 
 ### Auth
-- `POST /auth/signup`
-- `POST /auth/login`
-- `POST /auth/refresh`
-- `POST /auth/logout`
-- `POST /auth/forgot-password`
-- `POST /auth/reset-password`
+- POST /auth/signup
+- POST /auth/login
+- POST /auth/refresh
+- POST /auth/logout
+- POST /auth/forgot-password
+- POST /auth/reset-password
 
 ### User / Brand
-- `GET /me`
-- `PATCH /me`
-- `GET /brands`
-- `POST /brands`
-- `PATCH /brands/:id`
+- GET /me
+- PATCH /me
+- GET /brands
+- POST /brands
+- PATCH /brands/:id
 
 ### Campaigns
-- `GET /campaigns`
-- `GET /campaigns/:id`
-- `POST /campaigns`
-- `PATCH /campaigns/:id`
-- `DELETE /campaigns/:id`
+- GET /campaigns
+- GET /campaigns/:id
+- POST /campaigns
+- PATCH /campaigns/:id
+- DELETE /campaigns/:id
 
 ### Content
-- `GET /campaigns/:id/content`
-- `POST /campaigns/:id/content`
-- `GET /content/:id`
-- `PATCH /content/:id`
-- `POST /content/:id/schedule`
+- GET /campaigns/:id/content
+- POST /campaigns/:id/content
+- GET /content/:id
+- PATCH /content/:id
+- POST /content/:id/schedule
 
 ### Calendar
-- `GET /calendar`
-- `POST /calendar/drag`
+- GET /calendar
+- POST /calendar/drag
 
 ### Analytics
-- `GET /analytics/overview`
-- `GET /analytics/campaigns`
-- `GET /analytics/content`
-- `GET /analytics/campaigns/:id`
+- GET /analytics/overview
+- GET /analytics/campaigns
+- GET /analytics/content
+- GET /analytics/campaigns/:id
 
 ### Integrations
-- `GET /integrations`
-- `POST /integrations/:provider/connect`
-- `GET /integrations/:provider/status`
+- GET /integrations
+- POST /integrations/:provider/connect
+- GET /integrations/:provider/status
 
 ### Progression
-- `GET /progression`
-- `POST /progression/event`
+- GET /progression
+- POST /progression/event
