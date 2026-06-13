@@ -105,6 +105,52 @@ apps/mobile-client/
 ├── backend-deploy.yml
 └── mobile-build.yml
 
+apps/mobile-client/src/
+├────── main.tsx
+├────── AppRouter.tsx
+├── components/
+│   ├──── AuthGuard.tsx
+│   ├──── LoadingScreen.tsx
+│   └──── TabBar.tsx
+├── contexts/
+│   ├──── AppProviders.tsx
+│   ├──── AuthContext.tsx
+│   ├──── BrandContext.tsx
+│   ├──── ProgressionContext.tsx
+│   └──── ToastContext.tsx
+├── lib/
+│   ├────── api.ts
+│   ├────── constants.ts
+│   └────── supabase.ts
+├── pages/
+│   ├────── DeskPage.tsx
+│   ├────── OnboardingPage.tsx
+│   ├────── SettingsPage.tsx
+│   ├────── NotFoundPage.tsx
+│   ├────── LoginPage.tsx
+│   ├────── BillingPage.tsx
+│   ├────── HelpCenterPage.tsx
+│   ├────── AnalyzePage.tsx
+│   ├────── PlanPage.tsx
+│   └── Legal/
+│       ├── LegalIndexPage.tsx
+│       ├── PrivacyPolicyPage.tsx
+│       ├── TermsOfUsePage.tsx
+│       ├── AcceptableUsePage.tsx
+│       └── CookiePolicyPage.tsx
+└── scenes/
+|    ├── ArtifactVaultScene.tsx
+|    ├── ObservatoryScene.tsx
+|    ├── SchedulerTowerScene.tsx
+|    ├── BrandIdentityChamber.tsx
+|    ├── AudienceArena.tsx
+|    ├── ContentForgeScene.tsx
+|    └── CreatorHubScene.tsx
+|
+packages/
+├──── cinematic-engine/src/
+├──── reward-engine/src/
+└── ui/src/
 
 ## Tech Stack
 
