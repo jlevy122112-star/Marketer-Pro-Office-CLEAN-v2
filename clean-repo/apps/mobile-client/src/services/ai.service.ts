@@ -1,28 +1,22 @@
 import { supabase } from '../lib/supabase';
-import type { GenerationRequest, GeneratedArtifact } from '../types';
+
+export interface GenerationRequest {
+  brandId: string;
+  topic: string;
+  contentType: 'post' | 'caption' | 'thread';
+  platforms: string[];
+  tone: 'professional' | 'casual' | 'witty';
+}
 
 export const aiService = {
-  async generateContent(request: GenerationRequest): Promise<GeneratedArtifact[]> {
-    const { data, error } = await supabase.functions.invoke('generate-content', {
-      body: request,
-    });
+  async generateContent(request: GenerationRequest) {
+    const { data, error } = await supabase.functions.invoke('generate-content', { body: request });
+    if (error) throw error;
     
-    if (error) throw new Error(error.message);
-    
-    // Log usage for the reward engine/billing guard
     await supabase.from('usage_events').insert({
       event_type: 'ai_generation',
-      metadata: { contentType: request.contentType, platforms: request.platforms }
+      metadata: { contentType: request.contentType }
     });
-
     return data.artifacts;
-  },
-
-  async optimizeContent(content: string, platform: string): Promise<string> {
-    // Call Edge Function for platform-specific optimization (e.g., character limits, hashtags)
-    const { data, error } = await supabase.functions.invoke('optimize-content', {
-      body: { content, platform }
-    });
-    return data?.optimizedContent ?? content;
   }
 };
