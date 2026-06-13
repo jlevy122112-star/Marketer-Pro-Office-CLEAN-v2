@@ -1,40 +1,41 @@
+'use client';
+
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Container, Stack, Heading, Text } from '@marketer-pro/ui';
+import { colors, space, letterSpacings } from '@marketer-pro/ui';
+import { SUPPORT } from '../../lib/constants';
 
-interface SectionProps { title: string; children: React.ReactNode; }
-const Section = ({ title, children }: SectionProps) => (
-  <div className="space-y-3">
-    <h2 className="font-heading text-sm font-semibold text-slate-200 tracking-wide">{title}</h2>
-    <div className="text-sm text-slate-400 font-body leading-relaxed space-y-2">{children}</div>
-  </div>
-);
-
-const AllowedItem = ({ text }: { text: string }) => (
-  <div className="flex items-start gap-2.5">
-    <CheckCircle2 className="w-4 h-4 text-emerald-500/70 flex-shrink-0 mt-0.5" />
-    <span className="text-sm text-slate-400">{text}</span>
-  </div>
-);
-
-const ForbiddenItem = ({ text }: { text: string }) => (
-  <div className="flex items-start gap-2.5">
-    <XCircle className="w-4 h-4 text-red-500/70 flex-shrink-0 mt-0.5" />
-    <span className="text-sm text-slate-400">{text}</span>
-  </div>
-);
-
-export const AcceptableUsePage = () => {
+export default function AcceptableUsePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-void-900 safe-top">
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] bg-void-900/95 backdrop-blur-md">
-        <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors">
-          <ChevronLeft className="w-4 h-4" />
+    <Container tabBarOffset={false}>
+      <div style={{ padding: `${space[4]} ${space[5]} ${space[3]}` }}>
+        <button onClick={() => navigate(-1)} aria-label="Go back"
+          style={{ color: colors.text.tertiary, background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginBottom: space[4] }}>
+          <ArrowLeft size={20} />
         </button>
-        <div>
-          <p className="font-display text-base tracking-[0.15em] text-classified">ACCEPTABLE USE</p>
-          <p className="font-classified text-[9px] tracking-[0.2em] text-slate-600">LAST UPDATED 1 JANUARY 2026</p>
+        <Heading level={2} gold>Acceptable Use Policy</Heading>
+        <Text variant="faint" size="sm" style={{ marginTop: 6 }}>Last updated: June 2026</Text>
+      </div>
+      <Stack gap={20} style={{ padding: `0 ${space[5]} ${space[10]}` }}>
+        {[
+          { title: 'Permitted Use', body: 'Marketer-Pro may be used for legitimate marketing and content creation purposes for businesses, brands, and individual creators. You must be 18 years or older to use the service.' },
+          { title: 'Prohibited Content', body: `You may not use Marketer-Pro to generate or distribute: hate speech or content targeting protected groups, sexually explicit material, content designed to harass or threaten individuals, medical or legal advice presented as professional guidance, misinformation or deliberately false content, spam or unsolicited bulk messaging, or content that violates any applicable law.` },
+          { title: 'Platform Compliance', body: 'All content published through Marketer-Pro must comply with the terms of service of the connected social platform (Facebook, Instagram, LinkedIn, X/Twitter, TikTok). Violations of platform terms may result in your social accounts being suspended, for which Marketer-Pro bears no responsibility.' },
+          { title: 'AI Content Responsibility', body: 'You are solely responsible for reviewing AI-generated content before publishing. Do not publish content that is inaccurate, misleading, or could harm others. Use the Report Content button on any AI output that appears harmful or objectionable.' },
+          { title: 'Enforcement', body: `Violations of this policy may result in immediate account suspension without refund. Repeated violations will result in permanent account termination. Report violations to ${SUPPORT.email}.` },
+        ].map(({ title, body }) => (
+          <div key={title}>
+            <Text variant="gold" size="sm" weight="bold" uppercase style={{ letterSpacing: letterSpacings.wider, marginBottom: 10, display: 'block' }}>{title}</Text>
+            <Text variant="tertiary" size="base" style={{ lineHeight: 1.8 }}>{body}</Text>
+          </div>
+        ))}
+      </Stack>
+    </Container>
+  );
+      }          <p className="font-classified text-[9px] tracking-[0.2em] text-slate-600">LAST UPDATED 1 JANUARY 2026</p>
         </div>
       </div>
 
