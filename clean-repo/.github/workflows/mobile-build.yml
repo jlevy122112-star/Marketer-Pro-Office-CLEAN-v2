@@ -1,3 +1,10 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# MOBILE BUILD — GitHub Actions
+# Builds the Capacitor mobile client.
+# Android: produces AAB for Google Play.
+# iOS: builds IPA for App Store (requires macOS runner + certificates).
+# ─────────────────────────────────────────────────────────────────────────────
+
 name: Mobile Build
 
 on:
@@ -7,34 +14,191 @@ on:
       - 'apps/mobile-client/**'
       - 'packages/**'
       - '.github/workflows/mobile-build.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/mobile-client/**'
-      - 'packages/**'
   workflow_dispatch:
     inputs:
       platform:
         description: 'Platform to build'
         required: true
-        default: 'both'
+        default: 'android'
         type: choice
-        options: [ios, android, both]
+        options: [android, ios, both]
 
-env:
-  NODE_VERSION: '20'
-  PNPM_VERSION: '8'
+concurrency:
+  group: mobile-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ── Web build (shared by both platforms) ─────────────────────────────────────
-  web-build:
-    name: Build web assets
+
+  # ── Build web assets ─────────────────────────────────────────────────────────
+  build-web:
+    name: Build Web Assets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v3
+        with: { version: '9' }
+
+      - uses: actions/setup-node@v4
         with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm --filter @marketer-pro/mobile-client typecheck
+
+      - name: Build mobile client
+        run: pnpm --filter @marketer-pro/mobile-client build
+        env:
+          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_API_BASE_URL:      ${{ secrets.VITE_API_BASE_URL }}
+
+      - name: Upload web dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-web-dist
+          path: apps/mobile-client/dist/
+          retention-days: 1
+
+  # ── Android AAB ───────────────────────────────────────────────────────────────
+  build-android:
+    name: Build Android AAB
+    needs: build-web
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.platform == 'android' || github.event.inputs.platform == 'both') ||
+      github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with: { version: '9' }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download web dist
+        uses: actions/download-artifact@v4
+        with:
+          name: mobile-web-dist
+          path: apps/mobile-client/dist/
+
+      - name: Capacitor sync (Android)
+        run: |
+          cd apps/mobile-client
+          pnpm cap:sync android
+        env:
+          CI: true
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > apps/mobile-client/android/marketer-pro.keystore
+
+      - name: Build AAB
+        run: |
+          cd apps/mobile-client/android
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=marketer-pro.keystore \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab
+          path: apps/mobile-client/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+  # ── iOS IPA ───────────────────────────────────────────────────────────────────
+  build-ios:
+    name: Build iOS IPA
+    needs: build-web
+    runs-on: macos-14
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'both')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with: { version: '9' }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download web dist
+        uses: actions/download-artifact@v4
+        with:
+          name: mobile-web-dist
+          path: apps/mobile-client/dist/
+
+      - name: Capacitor sync (iOS)
+        run: |
+          cd apps/mobile-client
+          pnpm cap:sync ios
+
+      - name: Install CocoaPods
+        run: |
+          cd apps/mobile-client/ios/App
+          pod install
+
+      - name: Import certificates
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64:  ${{ secrets.IOS_P12_BASE64 }}
+          p12-password:     ${{ secrets.IOS_P12_PASSWORD }}
+
+      - name: Download provisioning profile
+        uses: apple-actions/download-provisioning-profiles@v2
+        with:
+          bundle-id:       'app.marketerpro.office'
+          issuer-id:       ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id:      ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+
+      - name: Build IPA
+        run: |
+          cd apps/mobile-client
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            archive | xcpretty
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ios/ExportOptions.plist \
+            -exportPath build/ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: apps/mobile-client/build/ipa/*.ipa
+          retention-days: 30        with:
           version: ${{ env.PNPM_VERSION }}
 
       - uses: actions/setup-node@v4
