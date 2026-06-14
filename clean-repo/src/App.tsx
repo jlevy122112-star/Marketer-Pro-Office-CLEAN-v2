@@ -9,9 +9,11 @@ import { TabBar }                from './components/common/TabBar';
 import { SupportFAB }            from './components/common/SupportFAB';
 import { OfflineBanner }         from './components/common/OfflineBanner';
 import { LoadingScreen }         from './components/common/LoadingScreen';
-
 const LoginPage        = lazy(() => import('./pages/Auth/LoginPage'));
 const SignUpPage       = lazy(() => import('./pages/Auth/SignUpPage'));
+const ForgotPasswordPage    = lazy(() => import('./pages/Auth/ForgotPasswordPage'));
+const ResetPasswordPage     = lazy(() => import('./pages/Auth/ResetPasswordPage'));
+const EmailVerificationPage = lazy(() => import('./pages/Auth/EmailVerificationPage')); 
 const ForgotPasswordPage    = lazy(() => import('./pages/Auth/ForgotPasswordPage'));
 const ResetPasswordPage     = lazy(() => import('./pages/Auth/ResetPasswordPage'));
 const EmailVerificationPage = lazy(() => import('./pages/Auth/EmailVerificationPage'));
