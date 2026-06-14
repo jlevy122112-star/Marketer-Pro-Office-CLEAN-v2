@@ -6,7 +6,8 @@
 // Auth guard prevents unauthenticated access to protected routes.
 // Lazy loads all scenes and pages for smaller initial bundle.
 // ─────────────────────────────────────────────────────────────────────────────
-
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage'));
 import { Suspense, lazy, useEffect } from 'react';
 import {
   BrowserRouter,
