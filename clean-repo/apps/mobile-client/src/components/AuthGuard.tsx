@@ -1,40 +1,24 @@
-'use client';
+// FILE PATH: src/components/auth/AuthGuard.tsx
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { LoadingScreen } from '../common/LoadingScreen';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH GUARD
-// Wraps protected routes. Redirects to /login if not authenticated.
-// Redirects to /onboarding if auth but onboarding not complete.
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { type ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { LoadingScreen } from './LoadingScreen';
-
-interface AuthGuardProps {
-  children:           ReactNode;
-  requireAuth?:       boolean;
-  requireOnboarding?: boolean;
-}
-
-export function AuthGuard({
-  children,
-  requireAuth       = true,
-  requireOnboarding = true,
-}: AuthGuardProps) {
-  const { session, user, loading } = useAuth();
+export function AuthGuard() {
+  const { session, loading, user } = useAuth();
   const location = useLocation();
 
   if (loading) return <LoadingScreen />;
+  if (!session) return <Navigate to="/login" state={{ from: location }} replace />;
 
-  if (requireAuth && !session) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (requireAuth && requireOnboarding && user && !user.onboardingComplete) {
+  // FIX: was checking !user.displayName which trapped Apple Sign In users
+  // who legitimately skip the display name field.
+  // Now correctly checks onboardingComplete which OnboardingPage sets on finish.
+  if (user && !user.onboardingComplete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
+  return <Outlet />;
+}
   if (session && location.pathname === '/login') {
     return <Navigate to="/desk" replace />;
   }
