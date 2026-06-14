@@ -1,40 +1,204 @@
-// ─── User & Auth ───────────────────────────────────────────────────────────
+// FILE PATH: src/types/index.ts
+import type { PlatformId, PlanId, ContentType } from '../lib/constants';
+
+// ── User ──────────────────────────────────────────────────────
 export interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatarUrl: string | null;
-  plan: 'free' | 'pro' | 'enterprise';
-  createdAt: string;
+  id:                 string;
+  email:              string;
+  displayName:        string;
+  avatarUrl?:         string;
+  planId:             PlanId;
+  xp:                 number;
+  level:              number;
+  onboardingComplete: boolean;
+  createdAt:          string;
 }
 
-// ─── Brand ─────────────────────────────────────────────────────────────────
+// ── Brand ─────────────────────────────────────────────────────
 export interface Brand {
-  id: string;
-  userId: string;
-  name: string;
-  logoUrl: string | null;
-  colors: BrandColors;
-  tone: BrandTone;
-  industry: string | null;
-  website: string | null;
-  createdAt: string;
-}
-
-export interface BrandColors {
-  primary: string;
-  secondary: string;
-  accent: string;
+  id:             string;
+  userId:         string;
+  name:           string;
+  tagline?:       string;
+  logoUrl?:       string;
+  primaryColor:   string;
+  secondaryColor: string;
+  tone:           BrandTone;
+  targetAudience: string;
+  industry:       string;
+  platforms:      PlatformId[];
+  createdAt:      string;
+  updatedAt:      string;
 }
 
 export type BrandTone =
   | 'professional'
   | 'casual'
-  | 'humorous'
-  | 'inspirational'
+  | 'playful'
   | 'authoritative'
-  | 'playful';
+  | 'inspirational'
+  | 'luxury'
+  | 'witty';
 
+// ── Content generation ────────────────────────────────────────
+export interface GenerationRequest {
+  brandId:          string;
+  prompt:           string;
+  contentType:      ContentType;
+  platforms:        PlatformId[];
+  tone?:            BrandTone;
+  includeHashtags?: boolean;
+  includeAltText?:  boolean;
+  includeAdCopy?:   boolean;
+}
+
+export interface GeneratedArtifact {
+  id:            string;
+  platform:      PlatformId;
+  contentType:   ContentType;
+  copy:          string;
+  caption?:      string;
+  hashtags?:     string[];
+  altText?:      string;
+  adHeadline?:   string;
+  adDescription?: string;
+  imagePrompt?:  string;
+  characterCount: number;
+  optimized:     boolean;
+  score?:        number;
+}
+
+export interface GenerationResult {
+  id:        string;
+  brandId:   string;
+  prompt:    string;
+  artifacts: GeneratedArtifact[];
+  status:    'complete' | 'partial' | 'failed';
+  createdAt: string;
+}
+
+// ── Scheduled posts ───────────────────────────────────────────
+export interface ScheduledPost {
+  id:           string;
+  brandId:      string;
+  artifactId:   string;
+  platform:     PlatformId;
+  content:      string;
+  mediaUrls?:   string[];
+  scheduledFor: string;
+  status:       'draft' | 'scheduled' | 'publishing' | 'published' | 'failed';
+  publishedAt?:  string;
+  errorMessage?: string;
+  createdAt:    string;
+}
+
+// ── Campaigns ─────────────────────────────────────────────────
+export interface Campaign {
+  id:          string;
+  userId:      string;
+  brandId:     string;
+  name:        string;
+  description: string;
+  objective:   CampaignObjective;
+  startDate:   string;
+  endDate?:    string;
+  platforms:   PlatformId[];
+  status:      'draft' | 'active' | 'paused' | 'completed';
+  kpis:        CampaignKPI[];
+  createdAt:   string;
+  updatedAt:   string;
+}
+
+export type CampaignObjective =
+  | 'brand_awareness'
+  | 'lead_generation'
+  | 'engagement'
+  | 'conversions'
+  | 'traffic';
+
+export interface CampaignKPI {
+  metric: string;
+  target: number;
+  current: number;
+}
+
+// ── Analytics ─────────────────────────────────────────────────
+export interface AnalyticsSummary {
+  totalImpressions:  number;
+  totalEngagements:  number;
+  totalClicks:       number;
+  engagementRate:    number;
+  followerGrowth:    number;
+  followerGrowthPct: number;
+}
+
+export interface PlatformMetric {
+  platform:       string;
+  impressions:    number;
+  engagements:    number;
+  clicks:         number;
+  followers:      number;
+  engagementRate: number;
+  color:          string;
+}
+
+export interface ContentMetric {
+  contentId:      string;
+  platform:       string;
+  impressions:    number;
+  engagements:    number;
+  clicks:         number;
+  engagementRate: number;
+}
+
+export interface GrowthPoint {
+  date:      string;
+  followers: number;
+  delta:     number;
+}
+
+// ── Billing ───────────────────────────────────────────────────
+export interface Subscription {
+  id:                string;
+  userId:            string;
+  planId:            PlanId;
+  status:            'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete';
+  interval:          'monthly' | 'annual';
+  currentPeriodEnd:  string;
+  cancelAtPeriodEnd: boolean;
+  trialEnd?:         string;
+}
+
+// ── Cinematic engine ──────────────────────────────────────────
+// FIX: was missing 'vault_open' — caused CinematicEngine to skip reactor
+// All states the reducer emits are now listed here
+export type CinematicState =
+  | 'idle'
+  | 'vault_intro'
+  | 'vault_open'      // ← was missing from original
+  | 'reactor_arm'
+  | 'reactor_fire'    // ← was missing from original
+  | 'generating'
+  | 'presentation'
+  | 'artifact_select'
+  | 'error';
+
+export interface CinematicContext {
+  request?:   GenerationRequest;
+  result?:    GenerationResult;
+  error?:     string;
+  startedAt?: number;
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+export type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info' | 'gold';
+
+export interface Toast {
+  id:           string;
+  variant:      ToastVariant;
+  title:        string;
+  description?: string;
+  }
 // ─── Platform ──────────────────────────────────────────────────────────────
 export type SocialPlatform =
   | 'instagram'
