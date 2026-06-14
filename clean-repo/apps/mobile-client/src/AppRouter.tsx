@@ -176,6 +176,8 @@ export function AppRouter() {
 
             {/* ── Public routes ── */}
             <Route path="/login"      element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password"  element={<ResetPasswordPage />} />
             <Route path="/onboarding" element={
               <AuthGuard requireAuth requireOnboarding={false}>
                 <OnboardingPage />
