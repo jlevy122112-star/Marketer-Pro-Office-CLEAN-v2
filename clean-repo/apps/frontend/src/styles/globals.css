@@ -29,3 +29,66 @@
   ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.25); border-radius: 2px; }
   ::selection { background: rgba(201,168,76,0.25); color: #fff; }
 }
+/* Add at the bottom of globals.css */
+
+/* ── Additional utilities ──────────────────────────────── */
+@layer utilities {
+  /* Shimmer used by skeleton loader */
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+  }
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background-size: 200% 100%;
+  }
+
+  /* Spinner used by reset password page token check */
+  @keyframes spin-fast {
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin {
+    animation: spin-fast 0.9s linear infinite;
+  }
+
+  /* 2xs text size (missing from most Tailwind configs) */
+  .text-2xs {
+    font-size: 0.65rem;
+    line-height: 1rem;
+  }
+
+  /* Classified text color */
+  .text-classified {
+    color: #C9A84C;
+  }
+  .bg-classified {
+    background-color: #C9A84C;
+  }
+  .text-reactor {
+    color: #6EE7B7;
+  }
+  .bg-reactor {
+    background-color: #6EE7B7;
+  }
+  .bg-void-900 {
+    background-color: #080B14;
+  }
+  .text-void-900 {
+    color: #080B14;
+  }
+  .border-classified\/30 {
+    border-color: rgba(201,168,76,0.3);
+  }
+  .border-reactor\/40 {
+    border-color: rgba(110,231,183,0.4);
+  }
+  .bg-classified\/10 {
+    background-color: rgba(201,168,76,0.1);
+  }
+  .bg-reactor\/10 {
+    background-color: rgba(110,231,183,0.1);
+  }
+  .flex-2 {
+    flex: 2;
+  }
+}
