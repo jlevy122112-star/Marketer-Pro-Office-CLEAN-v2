@@ -36,12 +36,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchCurrentUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password }),
+  // AFTER — also return user so LoginPage can cache display name:
+const signIn = async (email: string, password: string): Promise<{
+  error: string | null;
+  user: { displayName: string } | null;
+}> => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) return { error: error?.message ?? 'Sign in failed', user: null };
+
+  // Fetch profile to get display name
+  try {
+    const profile = await api.get<{ displayName: string }>('/me');
+    return { error: null, user: { displayName: profile.displayName } };
+  } catch {
+    return { error: null, user: null };
+  }
+};
+    
     });
     if (!res.ok) {
       const err = await res.json();
